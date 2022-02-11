@@ -93,10 +93,13 @@ contract MagicDepositor is MagicDepositorConfig {
 
         uint256 stakeRewardIncrement = (harvestedAmount * stakeRewardSplit) / PRECISION;
         uint256 treasuryIncrement = (harvestedAmount * treasurySplit) / PRECISION;
+        uint256 heldMagicIncrement = withdrawnAmount + harvestedAmount - stakeRewardIncrement - treasuryIncrement;
 
         harvestForStakeRewards += stakeRewardIncrement;
         harvestForTreasury += treasuryIncrement;
-        harvestForNextDeposit += withdrawnAmount + harvestedAmount - stakeRewardIncrement - treasuryIncrement;
+        heldMagic += heldMagicIncrement;
+
+        harvestForNextDeposit += heldMagicIncrement;
     }
 
     function _checkCurrentDeposit() internal returns (AtlasDeposit storage) {
@@ -117,7 +120,6 @@ contract MagicDepositor is MagicDepositorConfig {
         atlasMine.harvestAll();
 
         magicBalanceIncrement = magic.balanceOf(address(this)) - magicBalancePreUpdate;
-        heldMagic += magicBalanceIncrement;
     }
 
     function _withdraw() internal returns (uint256 magicBalanceWithdrawn) {
@@ -143,14 +145,17 @@ contract MagicDepositor is MagicDepositorConfig {
 
     function _activateDeposit(AtlasDeposit storage atlasDeposit) internal {
         atlasDeposit.isActive = true;
-        uint256 amount = atlasDeposit.accumulatedMagic;
+        uint256 accumulatedMagic = atlasDeposit.accumulatedMagic;
 
-        uint256 mintedShares = (amount * mgMagic.totalSupply()) / heldMagic;
+        uint256 mintedShares = (accumulatedMagic * mgMagic.totalSupply()) / heldMagic;
         atlasDeposit.mintedShares = mintedShares;
+        heldMagic += accumulatedMagic;
 
         mgMagic.mint(address(this), mintedShares);
-        magic.approve(address(atlasMine), amount + harvestForNextDeposit);
+
+        uint256 depositAmount = accumulatedMagic + harvestForNextDeposit;
+        magic.approve(address(atlasMine), depositAmount);
         harvestForNextDeposit = 0;
-        atlasMine.deposit(amount, LOCK_FOR_TWELVE_MONTH);
+        atlasMine.deposit(depositAmount, LOCK_FOR_TWELVE_MONTH);
     }
 }
