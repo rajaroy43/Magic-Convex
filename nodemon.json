@@ -1,0 +1,15 @@
+{
+  "watch": [
+    "test",
+    ".env",
+    ".env.defaults",
+    "contracts/**/*.sol",
+    "scripts",
+    "src/**/*.ts",
+    "deploy/**/*",
+    "./hardhat.config.ts"
+  ],
+  "ignore": ["./src/**/*.spec.ts", "./**/typechain"],
+  "ext": "js, json, ts, sol",
+  "exec": "yarn test"
+}
