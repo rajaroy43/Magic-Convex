@@ -4,6 +4,7 @@ Protoype repository for magic-convex. Heavy work in progress, expect a lot of ch
 
 ## TODOs / Next steps
 
-- Add fund split for MagicDepositor on harvest and staking for mgMagic.
+- Add staking contract for mgMagic.
 - Add tests
 - Scaffold proposition to incentivize early deposits in the accumulation phase
+- Split functionality into either OpenZeppelin 's upgradable proxies or Diamonds
