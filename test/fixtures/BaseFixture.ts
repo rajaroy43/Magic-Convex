@@ -8,12 +8,20 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     mgMagicToken: { address: mgMagicTokenAddress },
     MagicDepositor: { address: MagicDepositorAddress },
   } = await deployments.fixture()
-  const [alice] = await ethers.getSigners()
+  const [alice, bob, carol, dave, mallory] = await ethers.getSigners()
+  const secondaryUsers = [bob, carol, dave]
 
   const atlasMine = AtlasMine__factory.connect(AtlasMineAddress, alice)
   const magicToken = IERC20__factory.connect(MagicTokenAddress, alice)
   const mgMagicToken = MgMagicToken__factory.connect(mgMagicTokenAddress, alice)
   const magicDepositor = MagicDepositor__factory.connect(MagicDepositorAddress, alice)
 
-  return { alice, atlasMine, magicToken, mgMagicToken, magicDepositor }
+  const split = await magicToken.balanceOf(alice.address).then((n) => n.div(secondaryUsers.length + 1))
+
+  for (const user of secondaryUsers) {
+    await magicToken.transfer(user.address, split)
+  }
+
+  await magicToken.approve(magicDepositor.address, ethers.constants.MaxUint256)
+  return { alice, bob, carol, dave, mallory, atlasMine, magicToken, mgMagicToken, magicDepositor }
 })

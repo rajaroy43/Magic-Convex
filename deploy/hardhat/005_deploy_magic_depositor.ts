@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { address: mgMagicTokenAddress } = await getContract(MG_MAGIC_TOKEN_CONTRACT_NAME)
 
   await deploy('MagicDepositor', {
-    args: [MAGIC_TOKEN_ADDRESS, ATLAS_MINE_ADDRESS, mgMagicTokenAddress],
+    args: [MAGIC_TOKEN_ADDRESS, mgMagicTokenAddress, ATLAS_MINE_ADDRESS],
     from: deployer,
   })
 }

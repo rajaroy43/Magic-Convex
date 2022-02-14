@@ -9,6 +9,11 @@ import './mgMagicToken.sol';
 import { AtlasDeposit, AtlasDepositLibrary } from './libs/AtlasDeposit.sol';
 import './MagicDepositorConfig.sol';
 
+////////////////////////////////////////////
+//  REMEMBER TO REMOVE THIS PRIOR TO PRODUCTION DEPLOY!
+////////////////////////////////////////////
+import 'hardhat/console.sol';
+
 contract MagicDepositor is MagicDepositorConfig {
     using SafeERC20 for IERC20;
     using AtlasDepositLibrary for AtlasDeposit;
@@ -21,7 +26,7 @@ contract MagicDepositor is MagicDepositorConfig {
     mgMagicToken private immutable mgMagic;
     IAtlasMine private immutable atlasMine;
 
-    mapping(uint256 => AtlasDeposit) public _atlasDeposits;
+    mapping(uint256 => AtlasDeposit) public atlasDeposits;
 
     /** State variables */
     uint256 private currentAtlasDepositIndex; // Most recent accumulated atlasDeposit
@@ -51,7 +56,7 @@ contract MagicDepositor is MagicDepositorConfig {
     }
 
     function claimMintedShares(uint256 atlasDepositIndex) external returns (uint256) {
-        AtlasDeposit storage atlasDeposit = _atlasDeposits[atlasDepositIndex];
+        AtlasDeposit storage atlasDeposit = atlasDeposits[atlasDepositIndex];
         require(atlasDeposit.exists, 'Deposit does not exist');
         require(atlasDeposit.isActive, 'Deposit has not been activated yet');
 
@@ -74,6 +79,11 @@ contract MagicDepositor is MagicDepositorConfig {
         uint256 amount = harvestForTreasury;
         harvestForTreasury = 0;
         magic.transfer(treasury, amount);
+    }
+
+    /** VIEW FUNCTIONS */
+    function getUserDeposittedMagic(uint256 atlasDepositId, address user) public view returns (uint256) {
+        return atlasDeposits[atlasDepositId].depositedMagicPerAddress[user];
     }
 
     /** INTERNAL FUNCTIONS */
@@ -103,9 +113,9 @@ contract MagicDepositor is MagicDepositorConfig {
     }
 
     function _checkCurrentDeposit() internal returns (AtlasDeposit storage) {
-        AtlasDeposit storage atlasDeposit = _atlasDeposits[currentAtlasDepositIndex];
+        AtlasDeposit storage atlasDeposit = atlasDeposits[currentAtlasDepositIndex];
         if (!atlasDeposit.exists) return _initializeNewAtlasDeposit();
-        if (!atlasDeposit.isActive) {
+        if (!atlasDeposit.isActive && atlasDeposit.canBeActivated()) {
             _activateDeposit(atlasDeposit);
             return _initializeNewAtlasDeposit();
         }
@@ -137,7 +147,7 @@ contract MagicDepositor is MagicDepositorConfig {
     }
 
     function _initializeNewAtlasDeposit() internal returns (AtlasDeposit storage atlasDeposit) {
-        atlasDeposit = _atlasDeposits[currentAtlasDepositIndex++];
+        atlasDeposit = atlasDeposits[++currentAtlasDepositIndex];
         atlasDeposit.exists = true;
         atlasDeposit.activationTimestamp = block.timestamp + ONE_MONTH;
         return atlasDeposit;
