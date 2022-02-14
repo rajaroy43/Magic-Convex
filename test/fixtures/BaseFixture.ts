@@ -1,11 +1,5 @@
 import { deployments } from 'hardhat'
-import {
-  AtlasMine__factory,
-  // Counter__factory,
-  IERC20__factory,
-  MagicDepositor__factory,
-  MgMagicToken__factory,
-} from '../../typechain'
+import { AtlasMine__factory, IERC20__factory, MagicDepositor__factory, MgMagicToken__factory } from '../../typechain'
 
 export const BaseFixture = deployments.createFixture(async ({ deployments, ethers }) => {
   const {

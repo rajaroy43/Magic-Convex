@@ -9,11 +9,13 @@ describe('Test', () => {
       const { alice, atlasMine, magicToken, mgMagicToken, magicDepositor } = await BaseFixture()
 
       await expect(magicDepositor.depositFor(0, alice.address)).to.be.revertedWith('amount cannot be 0')
-      await expect(magicDepositor.depositFor(1, AddressZero)).to.be.revertedWith('cannot deposit to 0x0')
+      await expect(magicDepositor.depositFor(1, AddressZero)).to.be.revertedWith('cannot deposit for 0x0')
     })
 
     describe('when the first user deposit happens', () => {
-      it('initializes the first deposit with the correct parameters')
+      it('initializes the first deposit with the correct parameters', async () => {
+        const { alice, atlasMine, magicToken, mgMagicToken, magicDepositor } = await BaseFixture()
+      })
     })
 
     describe('after the second month', () => {

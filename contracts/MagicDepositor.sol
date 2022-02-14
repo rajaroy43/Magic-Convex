@@ -80,7 +80,7 @@ contract MagicDepositor is MagicDepositorConfig {
 
     function _depositFor(uint256 amount, address to) internal {
         require(amount > 0, 'amount cannot be 0');
-        require(to != address(0), 'cannot atlasDeposit to 0x0');
+        require(to != address(0), 'cannot deposit for 0x0');
 
         _updateAtlasDeposits();
         _checkCurrentDeposit().increaseMagic(amount, to);
