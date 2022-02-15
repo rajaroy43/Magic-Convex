@@ -29,11 +29,11 @@ contract MagicDepositor is MagicDepositorConfig {
     mapping(uint256 => AtlasDeposit) public atlasDeposits;
 
     /** State variables */
-    uint256 private currentAtlasDepositIndex; // Most recent accumulated atlasDeposit
-    uint256 private harvestForNextDeposit; // Accumulated magic through harvest that is going to be recompounded on the next atlasDeposit
-    uint256 private harvestForStakeRewards; // " " that is going to be used to reward stakers
-    uint256 private harvestForTreasury; // " " that is going to sent to the treasury for other operations
-    uint256 private heldMagic; // Internal accounting that determines the amount of shares to mint on each atlasDeposit operation
+    uint256 public currentAtlasDepositIndex; // Most recent accumulated atlasDeposit
+    uint256 public harvestForNextDeposit; // Accumulated magic through harvest that is going to be recompounded on the next atlasDeposit
+    uint256 public harvestForStakeRewards; // " " that is going to be used to reward stakers
+    uint256 public harvestForTreasury; // " " that is going to sent to the treasury for other operations
+    uint256 public heldMagic; // Internal accounting that determines the amount of shares to mint on each atlasDeposit operation
 
     constructor(
         address _magic,
@@ -79,6 +79,11 @@ contract MagicDepositor is MagicDepositorConfig {
         uint256 amount = harvestForTreasury;
         harvestForTreasury = 0;
         magic.transfer(treasury, amount);
+    }
+
+    function update() external {
+        _updateAtlasDeposits();
+        // maybe add _checkCurrentDeposit() if it does not brick the contract
     }
 
     /** VIEW FUNCTIONS */
@@ -157,7 +162,12 @@ contract MagicDepositor is MagicDepositorConfig {
         atlasDeposit.isActive = true;
         uint256 accumulatedMagic = atlasDeposit.accumulatedMagic;
 
-        uint256 mintedShares = (accumulatedMagic * mgMagic.totalSupply()) / heldMagic;
+        uint256 totalExistingShares = mgMagic.totalSupply();
+
+        uint256 mintedShares = totalExistingShares > 0
+            ? (accumulatedMagic * mgMagic.totalSupply()) / heldMagic
+            : accumulatedMagic;
+
         atlasDeposit.mintedShares = mintedShares;
         heldMagic += accumulatedMagic;
 

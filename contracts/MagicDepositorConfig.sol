@@ -7,10 +7,10 @@ contract MagicDepositorConfig is Ownable {
     event UpdatedConfiguration(uint256 stakeRewardSplit, uint256 treasurySplit, address treasury, address staking);
 
     /** Config variables */
-    uint256 public stakeRewardSplit; // Proportion of harvest that is going to stake rewards
-    uint256 public treasurySplit; // Proportion of harvest that goes to the treasury
-    address public treasury; // Address of the treasury
-    address public staking; // Address of the staking contract
+    uint256 internal stakeRewardSplit; // Proportion of harvest that is going to stake rewards
+    uint256 internal treasurySplit; // Proportion of harvest that goes to the treasury
+    address internal treasury; // Address of the treasury
+    address internal staking; // Address of the staking contract
 
     /** ACCESS-CONTROLLED FUNCTIONS */
 
@@ -20,11 +20,30 @@ contract MagicDepositorConfig is Ownable {
         address _treasury,
         address _staking
     ) external onlyOwner {
+        require(_stakeRewardSplit + _treasurySplit < 1 ether, 'Invalid split config');
+        require(_treasury != address(0), 'Invalid treasury addr');
+        require(_staking != address(0), 'Invalid staking addr');
+
         stakeRewardSplit = _stakeRewardSplit;
         treasurySplit = _treasurySplit;
         treasury = _treasury;
         staking = _staking;
 
         emit UpdatedConfiguration(_stakeRewardSplit, _treasurySplit, _treasury, _staking);
+    }
+
+    /** VIEW FUNCTIONS */
+
+    function getConfig()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            address,
+            address
+        )
+    {
+        return (stakeRewardSplit, treasurySplit, treasury, staking);
     }
 }
