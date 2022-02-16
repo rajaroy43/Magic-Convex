@@ -5,13 +5,12 @@ import { parseEther } from 'ethers/lib/utils'
 import { BigNumber } from 'ethers'
 import { depositMagicInGuild } from '../utils/DepositMagicInGuild'
 import { ONE_DAY_IN_SECONDS, ONE_MONTH_IN_SECONDS } from '../utils/constants'
-import { MagicDepositor } from '../typechain'
 
 const { AddressZero } = ethers.constants
 
 const ONE_MAGIC = parseEther('1')
 
-describe('Test', () => {
+describe('MagicDepositor', () => {
   async function checkAtlasDepositHasBeenInitialized(atlasDeposit: any) {
     expect(atlasDeposit.activationTimestamp).to.be.gt(0)
     expect(atlasDeposit.accumulatedMagic).to.be.gt(0)
