@@ -10,6 +10,7 @@ import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-ethers'
 import 'solidity-coverage'
 import 'hardhat-deploy'
+import 'hardhat-tracer'
 import '@atixlabs/hardhat-time-n-mine'
 
 import { HardhatUserConfig, NetworksUserConfig } from 'hardhat/types'
@@ -61,6 +62,9 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+  },
+  mocha: {
+    timeout: 0,
   },
 }
 

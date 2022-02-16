@@ -11,5 +11,5 @@
   ],
   "ignore": ["./src/**/*.spec.ts", "./**/typechain"],
   "ext": "js, json, ts, sol",
-  "exec": "yarn test"
+  "exec": "yarn test -- --logs"
 }

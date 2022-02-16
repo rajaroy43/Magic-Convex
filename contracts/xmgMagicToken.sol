@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Taken from Sushiswap 's xSUSHI: https://etherscan.io/address/0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272
-pragma solidity 0.8;
+pragma solidity ^0.8.11;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 contract xmgMagicToken is ERC20('Staked mgMagic', 'xmgMagic') {

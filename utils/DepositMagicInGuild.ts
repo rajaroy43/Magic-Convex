@@ -13,10 +13,11 @@ export async function depositMagicInGuild(
   wallet: SignerWithAddress | Wallet,
   token: IERC20,
   guild: MagicDepositor,
-  amount: BigNumberish
+  amount: BigNumberish,
+  alreadyApproved = false
 ) {
   if (typeof amount === 'number') amount = parseEther(`${amount}`)
 
-  await token.connect(wallet).approve(guild.address, amount)
+  if (!alreadyApproved) await token.connect(wallet).approve(guild.address, amount)
   await guild.connect(wallet).deposit(amount)
 }
