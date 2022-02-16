@@ -1,7 +1,7 @@
 import { deployments } from 'hardhat'
 import {
   AtlasMine__factory,
-  Counter__factory,
+  // Counter__factory,
   IERC20__factory,
   MagicDepositor__factory,
   MgMagicToken__factory,
