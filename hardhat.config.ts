@@ -48,6 +48,7 @@ const config: HardhatUserConfig = {
       forking: {
         url: NODE_URL,
       },
+      allowUnlimitedContractSize: true,
     },
     localhost: {},
     coverage: {

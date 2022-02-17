@@ -252,7 +252,7 @@ describe('MagicDepositor', () => {
           magicToken.connect(carol).approve(magicDepositor.address, ethers.constants.MaxUint256),
         ])
 
-        for (let i = 0; i < 13; i++) {
+        for (let i = 0; i < 6; i++) {
           await Promise.all([
             depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
             depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount, true),
@@ -262,6 +262,10 @@ describe('MagicDepositor', () => {
           await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS)
         }
 
+        await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
+
+        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS * 6)
+
         await magicDepositor.withdrawStakeRewards()
         await magicDepositor.withdrawTreasury()
 
@@ -270,6 +274,15 @@ describe('MagicDepositor', () => {
 
       it('correctly withdraws the first deposit', async () => {
         const { alice, bob, carol, magicToken, mgMagicToken, magicDepositor, atlasMine } = await fixture()
+
+        await timeAndMine.increaseTime(ONE_DAY_IN_SECONDS * 15)
+
+        const [activeDepositsPre, heldMagicPre] = await Promise.all([
+          atlasMine.getAllUserDepositIds(magicDepositor.address),
+          magicDepositor.heldMagic(),
+        ])
+
+        const tx = await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
       })
     })
 

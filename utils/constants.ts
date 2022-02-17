@@ -4,9 +4,11 @@ import { parseEther } from 'ethers/lib/utils'
  * Arbitrum forking, needed for tests
  */
 export const ATLAS_MINE_ADDRESS = '0xA0A89db1C899c49F98E6326b764BAFcf167fC2CE'
+export const ATLAS_MINE_IMPLEMENTATION_ADDRESS = '0xc71e6725569af73ac6641ec4bcc99a709ead40c7'
+export const ATLAS_MASTER_OF_COIN_ADDRESS = '0x3563590e19d2b9216e7879d269a04ec67ed95a87'
 export const MAGIC_TOKEN_ADDRESS = '0x539bde0d7dbd336b79148aa742883198bbf60342'
 export const RICH_USER_ADDRESS = '0x482729215AAF99B3199E41125865821ed5A4978a'
-
+export const SECONDARY_RICH_USER_ADDRESS = '0xb7e50106a5bd3cf21af210a755f9c8740890a8c9'
 /**
  * Contract names
  */
