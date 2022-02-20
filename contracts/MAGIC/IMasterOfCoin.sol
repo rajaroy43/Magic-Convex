@@ -24,4 +24,22 @@ interface IMasterOfCoin {
     function getRatePerSecond(address _stream) external view returns (uint256 ratePerSecond);
 
     function getPendingRewards(address _stream) external view returns (uint256 pendingRewards);
+
+    function addStream(
+        address _stream,
+        uint256 _totalRewards,
+        uint256 _startTimestamp,
+        uint256 _endTimestamp,
+        bool _callback
+    ) external;
+
+    function updateStreamTime(
+        address _stream,
+        uint256 _startTimestamp,
+        uint256 _endTimestamp
+    ) external;
+
+    function fundStream(address _stream, uint256 _amount) external;
+
+    function getRoleMember(bytes32 role, uint256 index) external view returns (address);
 }
