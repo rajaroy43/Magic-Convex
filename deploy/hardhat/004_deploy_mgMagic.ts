@@ -9,7 +9,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   } = hre
   const { deployer } = await getNamedAccounts()
 
-  await deploy(MG_MAGIC_TOKEN_CONTRACT_NAME, { from: deployer })
+  const { address } = await deploy(MG_MAGIC_TOKEN_CONTRACT_NAME, { from: deployer })
+  hre.tracer.nameTags[address] = 'mgMagic'
 }
 export default func
 func.tags = ['mgMagic']

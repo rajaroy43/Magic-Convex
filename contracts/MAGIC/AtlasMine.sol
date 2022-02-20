@@ -347,6 +347,9 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
 
         totalLpToken -= lpAmount;
         magicTotalDeposits -= _amount;
+        CREO QUE EL PROBLEMA ESTA AQUI
+        EL CALCULO DE LPAMOUNT PARECE EQUIVOCADO
+        SEGURAMENTE POR ERRORES DE PRECISION EN EL RATIO
 
         user.depositAmount -= _amount;
         user.lpAmount -= lpAmount;
@@ -372,15 +375,13 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
 
         int256 accumulatedMagic = ((user.lpAmount * accMagicPerShare) / ONE).toInt256();
 
-        console.log('stats');
-        console.log(
-            user.lpAmount,
-            accMagicPerShare,
-            (user.lpAmount * accMagicPerShare) / ONE,
-            user.rewardDebt.toUint256()
-        );
+        // console.log('depositId - lp - accMagicPerShare - debt');
+        // console.log(_depositId, user.lpAmount, accMagicPerShare, user.rewardDebt.toUint256());
+
+        if (accumulatedMagic < user.rewardDebt)
+            console.log('Bad', accumulatedMagic.toUint256(), user.rewardDebt.toUint256());
         uint256 _pendingMagic = (accumulatedMagic - user.rewardDebt).toUint256();
-        console.log('success');
+
         // Effects
         user.rewardDebt = accumulatedMagic;
 
@@ -401,6 +402,9 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
     function harvestAll() public virtual {
         uint256[] memory depositIds = allUserDepositIds[msg.sender].values();
         for (uint256 i = 0; i < depositIds.length; i++) {
+            if (i == 0) {
+                console.log(msg.sender, depositIds[i], userInfo[msg.sender][depositIds[i]].lpAmount);
+            }
             harvestPosition(depositIds[i]);
         }
     }

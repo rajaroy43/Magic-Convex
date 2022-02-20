@@ -13,7 +13,7 @@ import { impersonate } from '../../utils/Impersonate'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const token = IERC20__factory.connect(MAGIC_TOKEN_ADDRESS, hre.ethers.provider)
-  const [alice] = await ethers.getSigners()
+  const [alice, bob, carol] = await ethers.getSigners()
 
   {
     await impersonate(RICH_USER_ADDRESS, alice, hre)
@@ -32,6 +32,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await token.connect(signer).transfer(ATLAS_MASTER_OF_COIN_ADDRESS, balance)
     console.log(await token.balanceOf(ATLAS_MASTER_OF_COIN_ADDRESS).then(formatEther))
   }
+
+  hre.tracer.nameTags[alice.address] = 'alice'
+  hre.tracer.nameTags[bob.address] = 'bob'
+  hre.tracer.nameTags[carol.address] = 'carol'
 }
 export default func
 func.tags = ['fund']

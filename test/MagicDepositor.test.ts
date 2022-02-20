@@ -1,10 +1,13 @@
 import { expect } from 'chai'
 import { BaseFixture } from './fixtures/BaseFixture'
-import { deployments, ethers, timeAndMine } from 'hardhat'
+import { deployments, ethers, timeAndMine, tracer } from 'hardhat'
 import { parseEther } from 'ethers/lib/utils'
 import { BigNumber } from 'ethers'
 import { depositMagicInGuild } from '../utils/DepositMagicInGuild'
 import {
+  ATLAS_MASTER_OF_COIN_ADDRESS,
+  ATLAS_MINE_ADDRESS,
+  MAGIC_TOKEN_ADDRESS,
   ONE_DAY_IN_SECONDS,
   ONE_MAGIC_BN,
   ONE_MONTH_IN_SECONDS,
@@ -28,6 +31,12 @@ describe('MagicDepositor', () => {
     expect(atlasDeposit.isActive).to.be.equal(true)
     expect(atlasDeposit.mintedShares).to.be.gt(0)
   }
+
+  before('tags', async () => {
+    tracer.nameTags[ATLAS_MINE_ADDRESS] = 'AtlasMine'
+    tracer.nameTags[MAGIC_TOKEN_ADDRESS] = 'MagicToken'
+    tracer.nameTags[ATLAS_MASTER_OF_COIN_ADDRESS] = 'Master of Coin'
+  })
 
   describe('depositFor()', () => {
     it('rejects zero inputs', async () => {
@@ -246,25 +255,33 @@ describe('MagicDepositor', () => {
       const fixture = deployments.createFixture(async (hre) => {
         const baseFixture = await BaseFixture()
         const { alice, bob, carol, magicToken, magicDepositor, atlasMine } = baseFixture
+        console.log('depaddr', magicDepositor.address)
 
         await Promise.all([
           magicToken.connect(bob).approve(magicDepositor.address, ethers.constants.MaxUint256),
           magicToken.connect(carol).approve(magicDepositor.address, ethers.constants.MaxUint256),
         ])
 
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 13; i++) {
+          console.log('MONTH', i)
+          console.log('==========================================')
           await Promise.all([
             depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
             depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount, true),
             depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount, true),
           ])
 
+          {
+            const { lpAmount } = await atlasMine.userInfo(magicDepositor.address, 1)
+            console.log('fixt', lpAmount.toString())
+          }
+
           await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS)
         }
 
-        await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
+        // await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
 
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS * 6)
+        // await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS * 6)
 
         await magicDepositor.withdrawStakeRewards()
         await magicDepositor.withdrawTreasury()
@@ -272,17 +289,27 @@ describe('MagicDepositor', () => {
         return { ...baseFixture }
       })
 
-      it('correctly withdraws the first deposit', async () => {
+      it.only('correctly withdraws the first deposit', async () => {
         const { alice, bob, carol, magicToken, mgMagicToken, magicDepositor, atlasMine } = await fixture()
+
+        {
+          const { lpAmount } = await atlasMine.userInfo(magicDepositor.address, 1)
+          console.log('test pre', lpAmount.toString())
+        }
 
         await timeAndMine.increaseTime(ONE_DAY_IN_SECONDS * 15)
 
-        const [activeDepositsPre, heldMagicPre] = await Promise.all([
-          atlasMine.getAllUserDepositIds(magicDepositor.address),
-          magicDepositor.heldMagic(),
-        ])
+        // const [activeDepositsPre, heldMagicPre] = await Promise.all([
+        //   atlasMine.getAllUserDepositIds(magicDepositor.address),
+        //   magicDepositor.heldMagic(),
+        // ])
 
-        const tx = await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
+        {
+          const { lpAmount } = await atlasMine.userInfo(magicDepositor.address, 1)
+          console.log('test post', lpAmount.toString())
+        }
+        await magicDepositor.update()
+        // const tx = await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
       })
     })
 

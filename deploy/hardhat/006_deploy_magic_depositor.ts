@@ -33,6 +33,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     deployer,
     xmgMagicTokenAddr
   )
+
+  hre.tracer.nameTags[magicDepositorAddress] = 'MagicDepositor'
 }
 
 export default func
