@@ -18,17 +18,18 @@ contract MagicDepositor is MagicDepositorConfig {
     using SafeERC20 for IERC20;
     using AtlasDepositLibrary for AtlasDeposit;
 
+    /** Constants */
     uint8 private constant LOCK_FOR_TWELVE_MONTH = 4;
     uint256 private constant ONE_MONTH = 30 days;
     uint256 private constant PRECISION = 1e18;
 
+    /** Immutables */
     IERC20 private immutable magic;
     mgMagicToken private immutable mgMagic;
     IAtlasMine private immutable atlasMine;
 
-    mapping(uint256 => AtlasDeposit) public atlasDeposits;
-
     /** State variables */
+    mapping(uint256 => AtlasDeposit) public atlasDeposits;
     uint256 public currentAtlasDepositIndex; // Most recent accumulated atlasDeposit
     uint256 public harvestForNextDeposit; // Accumulated magic through harvest that is going to be recompounded on the next atlasDeposit
     uint256 public harvestForStakeRewards; // " " that is going to be used to reward stakers
@@ -108,13 +109,13 @@ contract MagicDepositor is MagicDepositorConfig {
 
         uint256 stakeRewardIncrement = (harvestedAmount * stakeRewardSplit) / PRECISION;
         uint256 treasuryIncrement = (harvestedAmount * treasurySplit) / PRECISION;
-        uint256 heldMagicIncrement = withdrawnAmount + harvestedAmount - stakeRewardIncrement - treasuryIncrement;
+        uint256 heldMagicIncrement = harvestedAmount - stakeRewardIncrement - treasuryIncrement;
 
         harvestForStakeRewards += stakeRewardIncrement;
         harvestForTreasury += treasuryIncrement;
         heldMagic += heldMagicIncrement;
 
-        harvestForNextDeposit += heldMagicIncrement;
+        harvestForNextDeposit += withdrawnAmount + heldMagicIncrement;
     }
 
     function _checkCurrentDeposit() internal returns (AtlasDeposit storage) {

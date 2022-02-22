@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "yarn clean && yarn compile",
-    "clean": "npx hardhat clean",
+    "clean": "hardhat clean",
     "compile": "hardhat compile",
     "test": "yarn compile && hardhat test --no-compile",
-    "coverage": "yarn build && hardhat coverage --temp artifacts --network coverage",
+    "coverage": "hardhat coverage",
     "dev": "nodemon",
     "prettify": "prettier --write \"./**/*.{ts,sol}\""
   },

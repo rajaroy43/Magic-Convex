@@ -10,6 +10,7 @@ export const ATLAS_MASTER_OF_COIN_ROLE = '0x275f12656528ceae7cba2736a15cb4ce098f
 export const MAGIC_TOKEN_ADDRESS = '0x539bde0d7dbd336b79148aa742883198bbf60342'
 export const RICH_USER_ADDRESS = '0x482729215AAF99B3199E41125865821ed5A4978a'
 export const SECONDARY_RICH_USER_ADDRESS = '0xb7e50106a5bd3cf21af210a755f9c8740890a8c9'
+export const ARBITRUM_BLOCK_GAS_LIMIT = 200_000_000
 
 /**
  * Contract names
@@ -27,7 +28,7 @@ export const ONE_DAY_IN_SECONDS = 24 * 3600
 export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60
 
 export const ONE_MAGIC_BN = parseEther('1')
-export const THOUSAND_MAGIC_BN = parseEther('1000')
+export const ONE_THOUSAND_MAGIC_BN = parseEther('1000')
 
 export const PRECISION = parseEther('1')
 

@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumberish, Wallet } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
 import { IERC20, MagicDepositor } from '../typechain'
+import { ARBITRUM_BLOCK_GAS_LIMIT } from './constants'
 
 /**
  *
@@ -19,5 +20,5 @@ export async function depositMagicInGuild(
   if (typeof amount === 'number') amount = parseEther(`${amount}`)
 
   if (!alreadyApproved) await token.connect(wallet).approve(guild.address, amount)
-  await guild.connect(wallet).deposit(amount)
+  return await guild.connect(wallet).deposit(amount, { gasLimit: ARBITRUM_BLOCK_GAS_LIMIT })
 }

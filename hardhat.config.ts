@@ -14,6 +14,7 @@ import 'hardhat-tracer'
 import '@atixlabs/hardhat-time-n-mine'
 
 import { HardhatUserConfig, NetworksUserConfig } from 'hardhat/types'
+import { ARBITRUM_BLOCK_GAS_LIMIT } from './utils/constants'
 
 const { ETHERSCAN_API_KEY, NODE_URL } = process.env
 
@@ -48,6 +49,7 @@ const config: HardhatUserConfig = {
       forking: {
         url: NODE_URL,
       },
+      blockGasLimit: ARBITRUM_BLOCK_GAS_LIMIT,
       allowUnlimitedContractSize: true,
     },
     localhost: {},
