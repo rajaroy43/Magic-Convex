@@ -10,7 +10,7 @@ export const ATLAS_MASTER_OF_COIN_ROLE = '0x275f12656528ceae7cba2736a15cb4ce098f
 export const MAGIC_TOKEN_ADDRESS = '0x539bde0d7dbd336b79148aa742883198bbf60342'
 export const LEGION_NFT_ADDRESS = '0xfE8c1ac365bA6780AEc5a985D989b327C27670A1'
 export const TREASURE_NFT_ADDRESS = '0xEBba467eCB6b21239178033189CeAE27CA12EaDf'
-export const RICH_USER_ADDRESS = '0xDb6Ab450178bAbCf0e467c1F3B436050d907E233'
+export const RICH_USER_ADDRESS = '0xfd7a5c211ac4a00182aba2e92e1ccb0daacf8ab0'
 export const SECONDARY_RICH_USER_ADDRESS = '0xb7e50106a5bd3cf21af210a755f9c8740890a8c9'
 export const ARBITRUM_BLOCK_GAS_LIMIT = 200_000_000
 
@@ -34,6 +34,11 @@ export const ONE_MAGIC_BN = parseEther('1')
 export const ONE_THOUSAND_MAGIC_BN = parseEther('1000')
 
 export const PRECISION = parseEther('1')
+
+export const ONE_TREAUSRE = 1
+export const TREASURE_TOKEN_IDS = [117,133,151,73]
+export const ONE_LEGION = 1
+export const LEGION_TOKEN_IDS = [25855,25856,25857,25858]
 
 /**
  * Configuration of Magic Depositor
