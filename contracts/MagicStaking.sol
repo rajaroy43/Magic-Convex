@@ -26,7 +26,7 @@ contract  MagicStaking is Ownable{
         treasure = _treasure;
         legion = _legion;
         IERC1155(treasure).setApprovalForAll(_atlasMine,true);
-
+        IERC721(legion).setApprovalForAll(_atlasMine,true);
     }
 
     function setAtlasMine(address _atlasMine)external onlyOwner{
@@ -62,7 +62,6 @@ contract  MagicStaking is Ownable{
     //from atlasmine.legionStaked() and atlasmine.treasureStakedAmount()
 
     function stakeLegion(uint256 tokenId) external onlyOwner{
-        IERC721(legion).approve(address(atlasMine),tokenId);
         atlasMine.stakeLegion(tokenId);
     }
 
