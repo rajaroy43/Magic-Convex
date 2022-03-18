@@ -16,10 +16,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Tests
         env:
-          NODE_URL: "https://arb1.arbitrum.io/rpc"
-          ETHERSCAN_API_KEY: "943UXS5BDH7ICBQ46NF2YVU92K8W5JXEQ4"
+          NODE_URL: ${{ secrets.NODE_URL }}
         run: |
-          npm install --no-lockfile
+          npm install --no-lockfile --force
           npm run prettier
           npx hardhat typechain
           npx hardhat test

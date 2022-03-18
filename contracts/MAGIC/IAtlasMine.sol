@@ -21,14 +21,12 @@ interface IAtlasMine {
             int256,
             uint8
         );
-    
-    function stakeTreasure(uint256 _tokenId, uint256 _amount) external ;
+
+    function stakeTreasure(uint256 _tokenId, uint256 _amount) external;
 
     function unstakeTreasure(uint256 _tokenId, uint256 _amount) external;
 
     function stakeLegion(uint256 _tokenId) external;
 
     function unstakeLegion(uint256 _tokenId) external;
-
-
 }

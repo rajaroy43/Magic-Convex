@@ -3,13 +3,18 @@ dotenv.config()
 
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
+import '@typechain/hardhat'
+import '@nomiclabs/hardhat-ethers'
+import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-ethers'
 import 'solidity-coverage'
 import 'hardhat-deploy'
+import 'hardhat-tracer'
 import '@atixlabs/hardhat-time-n-mine'
 
 import { HardhatUserConfig, NetworksUserConfig } from 'hardhat/types'
+import { ARBITRUM_BLOCK_GAS_LIMIT } from './utils/constants'
 
 const { ETHERSCAN_API_KEY, NODE_URL } = process.env
 
@@ -42,8 +47,11 @@ const config: HardhatUserConfig = {
     hardhat: {
       deploy: ['./deploy/hardhat'],
       forking: {
+        blockNumber: 8103787,
         url: NODE_URL,
       },
+      blockGasLimit: ARBITRUM_BLOCK_GAS_LIMIT,
+      allowUnlimitedContractSize: true,
     },
     localhost: {},
     coverage: {
@@ -58,6 +66,9 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+  },
+  mocha: {
+    timeout: 0,
   },
 }
 

@@ -20,6 +20,10 @@ contract MagicDepositorConfig is Ownable {
         address _treasury,
         address _staking
     ) external onlyOwner {
+        require(_stakeRewardSplit + _treasurySplit < 1 ether, 'Invalid split config');
+        require(_treasury != address(0), 'Invalid treasury addr');
+        require(_staking != address(0), 'Invalid staking addr');
+
         stakeRewardSplit = _stakeRewardSplit;
         treasurySplit = _treasurySplit;
         treasury = _treasury;

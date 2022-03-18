@@ -2,10 +2,8 @@
 pragma solidity ^0.8.11;
 
 struct AtlasDeposit {
-    uint256 depositId;
     uint256 activationTimestamp;
     uint256 accumulatedMagic;
-    uint256 withdrawTimestamp;
     uint256 mintedShares;
     bool exists;
     bool isActive;
@@ -20,5 +18,9 @@ library AtlasDepositLibrary {
     ) internal {
         deposit.accumulatedMagic += amount;
         deposit.depositedMagicPerAddress[to] += amount;
+    }
+
+    function canBeActivated(AtlasDeposit storage deposit) internal view returns (bool) {
+        return deposit.activationTimestamp < block.timestamp;
     }
 }
