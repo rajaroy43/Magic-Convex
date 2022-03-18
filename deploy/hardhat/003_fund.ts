@@ -33,7 +33,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await token.connect(signer).transfer(alice.address, balance)
 
     await Promise.all(LEGION_TOKEN_IDS.map(async(id)=>{
-      await legion.connect(signer).transferFrom(RICH_USER_ADDRESS,alice.address,id)
+      const owner = await legion.ownerOf(id)
+      await impersonate(owner, alice, hre)
+      const signer = hre.ethers.provider.getSigner(owner)
+      await legion.connect(signer).transferFrom(owner,alice.address,id)
     }))
 
     const treasureTokenAmounts = await Promise.all(TREASURE_TOKEN_IDS.map(async(id)=>{
