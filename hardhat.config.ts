@@ -47,6 +47,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       deploy: ['./deploy/hardhat'],
       forking: {
+        blockNumber: 8103787,
         url: NODE_URL,
       },
       blockGasLimit: ARBITRUM_BLOCK_GAS_LIMIT,

@@ -36,6 +36,17 @@ contract MagicDepositor is MagicDepositorConfig {
     uint256 public harvestForTreasury; // " " that is going to sent to the treasury for other operations
     uint256 public heldMagic; // Internal accounting that determines the amount of shares to mint on each atlasDeposit operation
 
+    event ClaimMintedShares(address indexed user, uint256 indexed atlasDepositIndex, uint256 claim);
+    event WithdrawStakeRewards(address indexed caller, uint256 amount);
+    event WithdrawTreasury(address indexed caller, uint256 amount);
+    event DepositFor(address indexed from, address indexed to, uint256 amount);
+    event ActivateDeposit(
+        uint256 indexed atlasDepositIndex,
+        uint256 depositAmount,
+        uint256 accumulatedMagic,
+        uint256 mintedShares
+    );
+
     constructor(
         address _magic,
         address _mgMagic,
@@ -67,6 +78,8 @@ contract MagicDepositor is MagicDepositorConfig {
 
         atlasDeposit.depositedMagicPerAddress[msg.sender] = 0;
         mgMagic.transfer(msg.sender, claim);
+
+        emit ClaimMintedShares(msg.sender, atlasDepositIndex, claim);
         return claim;
     }
 
@@ -74,12 +87,16 @@ contract MagicDepositor is MagicDepositorConfig {
         uint256 amount = harvestForStakeRewards;
         harvestForStakeRewards = 0;
         magic.transfer(staking, amount);
+
+        emit WithdrawStakeRewards(msg.sender, amount);
     }
 
     function withdrawTreasury() external {
         uint256 amount = harvestForTreasury;
         harvestForTreasury = 0;
         magic.transfer(treasury, amount);
+
+        emit WithdrawTreasury(msg.sender, amount);
     }
 
     function update() external {
@@ -101,6 +118,8 @@ contract MagicDepositor is MagicDepositorConfig {
         _updateAtlasDeposits();
         _checkCurrentDeposit().increaseMagic(amount, to);
         magic.safeTransferFrom(msg.sender, address(this), amount);
+
+        emit DepositFor(msg.sender, to, amount);
     }
 
     function _updateAtlasDeposits() internal {
@@ -178,5 +197,7 @@ contract MagicDepositor is MagicDepositorConfig {
         magic.approve(address(atlasMine), depositAmount);
         harvestForNextDeposit = 0;
         atlasMine.deposit(depositAmount, LOCK_FOR_TWELVE_MONTH);
+
+        emit ActivateDeposit(currentAtlasDepositIndex, depositAmount, accumulatedMagic, mintedShares);
     }
 }
