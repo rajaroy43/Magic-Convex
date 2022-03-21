@@ -14,7 +14,6 @@ import '@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpg
 import './IMasterOfCoin.sol';
 import './ILegionMetadataStore.sol';
 
-import 'hardhat/console.sol';
 
 contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155HolderUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
@@ -371,9 +370,6 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         UserInfo storage user = userInfo[msg.sender][_depositId];
 
         int256 accumulatedMagic = ((user.lpAmount * accMagicPerShare) / ONE).toInt256();
-
-        // console.log('depositId - lp - accMagicPerShare - debt');
-        // console.log(_depositId, user.lpAmount, accMagicPerShare, user.rewardDebt.toUint256());
 
         uint256 _pendingMagic = (accumulatedMagic - user.rewardDebt).toUint256();
 
