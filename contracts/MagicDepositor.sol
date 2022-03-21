@@ -9,11 +9,6 @@ import './mgMagicToken.sol';
 import { AtlasDeposit, AtlasDepositLibrary } from './libs/AtlasDeposit.sol';
 import './MagicDepositorConfig.sol';
 
-////////////////////////////////////////////
-//  REMEMBER TO REMOVE THIS PRIOR TO PRODUCTION DEPLOY!
-////////////////////////////////////////////
-import 'hardhat/console.sol';
-
 contract MagicDepositor is MagicDepositorConfig {
     using SafeERC20 for IERC20;
     using AtlasDepositLibrary for AtlasDeposit;
