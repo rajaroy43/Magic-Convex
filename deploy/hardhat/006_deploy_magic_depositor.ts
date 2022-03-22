@@ -5,7 +5,7 @@ import {
   ATLAS_MINE_ADDRESS,
   MG_MAGIC_TOKEN_CONTRACT_NAME,
   MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG,
-  XMG_MAGIC_TOKEN_CONTRACT_NAME,
+  REWARD_POOL_CONTRACT_NAME,
 } from '../../utils/constants'
 import { MagicDepositor__factory, MgMagicToken } from '../../typechain'
 
@@ -18,21 +18,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   const mgMagicToken = (await getContract(MG_MAGIC_TOKEN_CONTRACT_NAME)) as MgMagicToken
-  const { address: xmgMagicTokenAddr } = await getContract(XMG_MAGIC_TOKEN_CONTRACT_NAME)
-
+  const args = [MAGIC_TOKEN_ADDRESS, mgMagicToken.address, ATLAS_MINE_ADDRESS]
   const { address: magicDepositorAddress } = await deploy('MagicDepositor', {
-    args: [MAGIC_TOKEN_ADDRESS, mgMagicToken.address, ATLAS_MINE_ADDRESS],
+    args : args,
     from: deployer,
   })
 
   await mgMagicToken.transferOwnership(magicDepositorAddress).then((tx) => tx.wait())
-
-  await MagicDepositor__factory.connect(magicDepositorAddress, mgMagicToken.signer).setConfig(
-    MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.rewards,
-    MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.treasury,
-    deployer,
-    xmgMagicTokenAddr
-  )
 
   hre.tracer.nameTags[magicDepositorAddress] = 'MagicDepositor'
 }
