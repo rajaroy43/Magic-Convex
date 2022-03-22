@@ -28,15 +28,13 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
     IERC20 private immutable magic;
     mgMagicToken private immutable mgMagic;
     IAtlasMine private immutable atlasMine;
-    IRewards private immutable lockRewards;
-    IRewards private immutable stakerRewards;
 
     /** State variables */
     mapping(uint256 => AtlasDeposit) public atlasDeposits;
     uint256 public currentAtlasDepositIndex; // Most recent accumulated atlasDeposit
     uint256 public harvestForNextDeposit; // Accumulated magic through harvest that is going to be recompounded on the next atlasDeposit
-    uint256 public harvestForStakeRewards; // " " that is going to be used to reward stakers(staking Precious rewards)
-    uint256 public harvestForLockRewards; // " " that is going to sent to the locked rewards(staking prMagic rewards)
+    uint256 public harvestForTreasury; // " " that is going to sent to the treasury for other operations
+    uint256 public harvestForStakingRewards; // " " that is going to be used to reward stakers(staking prMagic rewards)
     uint256 public heldMagic; // Internal accounting that determines the amount of shares to mint on each atlasDeposit operation
 
     event ClaimMintedShares(address indexed user, uint256 indexed atlasDepositIndex, uint256 claim);
@@ -49,20 +47,16 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
         uint256 accumulatedMagic,
         uint256 mintedShares
     );
-    event RewardsEarmarked(address indexed user,uint256 harvestStakedAmount,uint256 harvestLockedAmount);
+    event RewardsEarmarked(address indexed user,uint256 harvestTreasuryAmount,uint256 harvestStakedAmount);
 
     constructor(
         address _magic,
         address _mgMagic,
-        address _atlasMine,
-        address _lockRewards,
-        address _stakeRewards
+        address _atlasMine
     ) {
         magic = IERC20(_magic);
         mgMagic = mgMagicToken(_mgMagic);
         atlasMine = IAtlasMine(_atlasMine);
-        lockRewards = IRewards(_lockRewards);
-        stakerRewards = IRewards(_stakeRewards);
     }
 
     /** USER EXPOSED FUNCTIONS */
@@ -87,9 +81,9 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
         atlasDeposit.depositedMagicPerAddress[msg.sender] = 0;
 
         if(stake){
-            mgMagic.safeApprove(address(lockRewards),0);
-            mgMagic.safeApprove(address(lockRewards),claim);
-            lockRewards.stakeFor(msg.sender,claim);
+            mgMagic.safeApprove(staking,0);
+            mgMagic.safeApprove(staking,claim);
+            IRewards(staking).stakeFor(msg.sender,claim);
         }
         else{
             mgMagic.safeTransfer(msg.sender, claim);
@@ -103,24 +97,23 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
 
         // will be send incentives for calling earmarkRewards() in later version 
         // magic.safeTransfer(msg.sender, callIncentive);          
-        uint256 harvestStakedAmount = harvestForStakeRewards;
-        uint256 harvestLockedAmount = harvestForLockRewards;
+        uint256 harvestTreasuryAmount = harvestForTreasury;
+        uint256 harvestedStakingRewardAmount = harvestForStakingRewards;
 
-        if (harvestStakedAmount > 0) {
-            harvestForStakeRewards = 0;
-            //send stakers's share of magic to reward contract
-            magic.safeTransfer(address(stakerRewards),harvestStakedAmount);
-            IRewards(stakerRewards).queueNewRewards(harvestStakedAmount);
+        if (harvestTreasuryAmount > 0) {
+            harvestForTreasury = 0;
+            //send share of magic to treasury
+            magic.safeTransfer(treasury,harvestTreasuryAmount);
         }
 
-        if(harvestForLockRewards > 0){
-            harvestForLockRewards = 0;
+        if(harvestedStakingRewardAmount > 0){
+            harvestForStakingRewards = 0;
             //send lockers' share of magic to reward contract
-            magic.safeTransfer(address(lockRewards), harvestLockedAmount);
-            IRewards(lockRewards).queueNewRewards(harvestLockedAmount);
+            magic.safeTransfer(staking, harvestedStakingRewardAmount);
+            IRewards(staking).queueNewRewards(harvestedStakingRewardAmount);
         }
         
-        emit RewardsEarmarked(msg.sender,harvestStakedAmount,harvestLockedAmount);
+        emit RewardsEarmarked(msg.sender,harvestTreasuryAmount,harvestedStakingRewardAmount);
     }
 
     function update() external override{
@@ -149,13 +142,12 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
     function _updateAtlasDeposits() internal {
         uint256 withdrawnAmount = _withdraw(); // Need to check this first so that deposits are removed on the harvest call @ mine
         uint256 harvestedAmount = _harvest();
-        //treasuery split is rewardSplit of lockRewards pool
         uint256 stakeRewardIncrement = (harvestedAmount * stakeRewardSplit) / PRECISION;
-        uint256 lockRewardsIncrement = (harvestedAmount * treasurySplit) / PRECISION;
-        uint256 heldMagicIncrement = harvestedAmount - stakeRewardIncrement - lockRewardsIncrement;
+        uint256 treasuryIncrement = (harvestedAmount * treasurySplit) / PRECISION;
+        uint256 heldMagicIncrement = harvestedAmount - stakeRewardIncrement - treasuryIncrement;
 
-        harvestForStakeRewards += stakeRewardIncrement;
-        harvestForLockRewards += lockRewardsIncrement;
+        harvestForStakingRewards += stakeRewardIncrement;
+        harvestForTreasury += treasuryIncrement;
         heldMagic += heldMagicIncrement;
 
         harvestForNextDeposit += withdrawnAmount + heldMagicIncrement;
