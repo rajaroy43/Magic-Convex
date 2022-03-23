@@ -40,6 +40,4 @@ interface IMasterOfCoin {
     ) external;
 
     function fundStream(address _stream, uint256 _amount) external;
-
-    function getRoleMember(bytes32 role, uint256 index) external view returns (address);
 }
