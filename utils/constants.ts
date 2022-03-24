@@ -32,6 +32,7 @@ export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60
 
 export const ONE_MAGIC_BN = parseEther('1')
 export const ONE_THOUSAND_MAGIC_BN = parseEther('1000')
+export const TEN_MILLION_MAGIC_BN = parseEther('10000000')
 
 export const PRECISION = parseEther('1')
 
