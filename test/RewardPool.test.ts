@@ -144,6 +144,9 @@ describe('Reward Pool', () => {
             beforecurrentAtlasDepositId,
             alice.address
 		  )
+
+		  console.log("After passing 3days")
+		  
 		  const threeDay = 3*24*60*60 
 		  await timeAndMine.increaseTime(threeDay)
 		  
@@ -199,6 +202,7 @@ describe('Reward Pool', () => {
 
           await expect(magicDepositor.connect(alice).earmarkRewards()).to.emit(magicDepositor, 'RewardsEarmarked')
 
+		  console.log("After passing 3days")
 		  const threeDay = 3*24*60*60 
 		  await timeAndMine.increaseTime(threeDay)
 
