@@ -59,7 +59,7 @@ contract RewardPool{
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
         if (account != address(0)) {
-            rewards[account] = earnedReward(account);
+            rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
         } 
         _;
@@ -79,7 +79,7 @@ contract RewardPool{
 
     }
 
-    function earnedReward(address account) internal view returns (uint256) {
+    function earned(address account) public view returns (uint256) {
         return  (
             balanceOf(account) *
                 ( rewardPerToken() - userRewardPerTokenPaid[account]) / 1e18
@@ -130,7 +130,7 @@ contract RewardPool{
     }
 
     function getReward(address _account) public updateReward(_account){
-        uint256 reward = earnedReward(_account);
+        uint256 reward = earned(_account);
         if (reward > 0) {
             rewards[_account] = 0;
             rewardToken.safeApprove(magicDeposits,0);
