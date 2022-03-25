@@ -1,15 +1,12 @@
 import { expect } from 'chai'
 import { BaseFixture } from './fixtures/BaseFixture'
-import { BigNumber, ethers, Wallet } from 'ethers'
+import { ethers } from 'ethers'
 
 import { ONE_MAGIC_BN, ONE_MONTH_IN_SECONDS, ONE_THOUSAND_MAGIC_BN } from '../../utils/constants'
-import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../../utils/MagicNftStaking'
-import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../../typechain'
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+
 import { deployments, timeAndMine } from 'hardhat'
 import { depositMagicInGuild } from '../../utils/DepositMagicInGuild'
 import { stakePrMagic } from '../../utils/StakeRewardPool'
-const { AddressZero } = ethers.constants
 describe('Reward Pool', () => {
   it('Reward Pool Initialized', async () => {
     const {
@@ -34,7 +31,7 @@ describe('Reward Pool', () => {
     const fixture = deployments.createFixture(async () => {
       const depositAmount = ONE_THOUSAND_MAGIC_BN
       const baseFixture = await BaseFixture()
-      const { alice, bob, carol, magicToken, magicDepositor, prMagicToken, rewardPool } = baseFixture
+      const { alice, bob, carol, magicToken, magicDepositor } = baseFixture
 
       for (let i = 0; i < 3; i++) {
         await Promise.all([
@@ -60,7 +57,7 @@ describe('Reward Pool', () => {
 
     describe('User Staking', () => {
       it('Staking prMagic token to reward pool by users', async () => {
-        const { alice, bob, magicToken, rewardPool, prMagicToken } = await fixture()
+        const { alice, bob, rewardPool, prMagicToken } = await fixture()
 
         // First ever user stake
         {
@@ -93,16 +90,13 @@ describe('Reward Pool', () => {
           expect(await rewardPool.balanceOf(alice.address)).to.be.equal(stakedAmount.mul(2))
         }
 
-        //last update will be 0 becuase periodFinish is stil 0
-
-        expect(await rewardPool.lastUpdateTime()).to.be.equal(0)
       })
     })
 
     describe('User Withdrawing staked amount', () => {
       const fixtureAfterStaking = deployments.createFixture(async () => {
         const baseFixture = await fixture()
-        const { alice, bob, carol, prMagicToken, rewardPool, magicToken, magicDepositor } = baseFixture
+        const { alice, bob, carol, prMagicToken, rewardPool } = baseFixture
 
         await stakePrMagic(alice, prMagicToken, rewardPool, stakedAmount, true)
         await stakePrMagic(bob, prMagicToken, rewardPool, stakedAmount)
@@ -123,125 +117,7 @@ describe('Reward Pool', () => {
           await expect(rewardPool.withdraw(stakedAmount, true)).to.be.reverted
         }
 
-        //last update will be 0 because periodFinish is stil 0
 
-        expect(await rewardPool.lastUpdateTime()).to.be.equal(0)
-      })
-
-      describe('Earmark rewards and donating prMagic to rewardPool ', () => {
-        it('Earmark Rewards', async () => {
-          const { alice, magicDepositor, rewardPool } = await fixtureAfterStaking()
-
-          const stakedHarvested = await magicDepositor.harvestForStakingRewards()
-          console.log('Harvest for staking rewards', stakedHarvested.div(ONE_MAGIC_BN).toString(),"magic tokens")
-
-		  await expect(magicDepositor.connect(alice).earmarkRewards()).
-		  		to.emit(magicDepositor, 'RewardsEarmarked')
-
-          const beforecurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
-
-          const beforeatlasDepositAmount = await magicDepositor.getUserDepositedMagic(
-            beforecurrentAtlasDepositId,
-            alice.address
-		  )
-
-		  console.log("After passing 3days")
-		  
-		  const threeDay = 3*24*60*60 
-		  await timeAndMine.increaseTime(threeDay)
-		  
-		  console.log("beforecurrentAtlasDepositId and beforeatlasDepositAmount",beforecurrentAtlasDepositId.toString(),beforeatlasDepositAmount.div(ONE_MAGIC_BN).toString())
-  
-		const events = (await (await rewardPool.connect(alice).getReward(alice.address)).wait()).events
-
-			// @ts-ignore
-		const reward = events[events.length-1].args['reward']
-
-          const afterCurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
-          const afterAtlasDepositAmount = await magicDepositor.getUserDepositedMagic(
-            afterCurrentAtlasDepositId,
-            alice.address
-		  )
-
-		  console.log("afterCurrentAtlasDepositId and afterAtlasDepositAmount",afterCurrentAtlasDepositId.toString(),afterAtlasDepositAmount.div(ONE_MAGIC_BN).toString())
-
-          expect(reward).to.equal(afterAtlasDepositAmount.sub(beforeatlasDepositAmount))
-
-          // Checking other state variable
-
-          const historicalRewards = await rewardPool.historicalRewards()
-          const rewardRate = await rewardPool.rewardRate()
-          const currentRewards = await rewardPool.currentRewards()
-          const queuedRewards = await rewardPool.queuedRewards()
-          const duration = await rewardPool.duration()
-
-          const rewardRatePerSecond = stakedHarvested.div(duration)
-
-          expect(historicalRewards).to.equal(stakedHarvested).to.equal(currentRewards)
-          expect(rewardRate).to.equal(rewardRatePerSecond)
-          expect(queuedRewards).to.equal(0)
-        })
-
-        it('Earmark rewards After Donating prMagic token', async () => {
-          const { alice, bob, magicToken, prMagicToken, magicDepositor, rewardPool } = await fixtureAfterStaking()
-          const magicBal = await magicToken.balanceOf(alice.address)
-		  const contractMagicBal = await magicToken.balanceOf(rewardPool.address)
-		  
-		  await rewardPool.connect(alice).donate(magicBal)
-		  
-		  
-		  const queuedRewardsAFterDonating = await rewardPool.queuedRewards()
-		  
-		  expect(queuedRewardsAFterDonating).to.be.equal(magicBal)
-
-          const afterDonatongContractMagicBal = await magicToken.balanceOf(rewardPool.address)
-
-          expect(afterDonatongContractMagicBal).to.equal(contractMagicBal.add(magicBal))
-
-          const stakedHarvested = await magicDepositor.harvestForStakingRewards()
-
-          await expect(magicDepositor.connect(alice).earmarkRewards()).to.emit(magicDepositor, 'RewardsEarmarked')
-
-		  console.log("After passing 3days")
-		  const threeDay = 3*24*60*60 
-		  await timeAndMine.increaseTime(threeDay)
-
-          const beforeCurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
-          const beforeAtlasDepositAmount = await magicDepositor.getUserDepositedMagic(
-            beforeCurrentAtlasDepositId,
-            alice.address
-          )
-		  console.log("beforecurrentAtlasDepositId and beforeatlasDepositAmount",beforeCurrentAtlasDepositId.toString(),beforeAtlasDepositAmount.div(ONE_MAGIC_BN).toString())
-  
-          const events = (await (await rewardPool.connect(alice).getReward(alice.address)).wait()).events
-
-          const afterCurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
-          const afterAtlasDepositAmount = await magicDepositor.getUserDepositedMagic(
-            afterCurrentAtlasDepositId,
-            alice.address
-		  )
-
-		  console.log("afterCurrentAtlasDepositId and afterAtlasDepositAmount",afterCurrentAtlasDepositId.toString(),afterAtlasDepositAmount.div(ONE_MAGIC_BN).toString())
-
-		// @ts-ignore
-		const reward = events[events.length-1].args['reward'];
-
-          expect(reward).to.equal(afterAtlasDepositAmount.sub(beforeAtlasDepositAmount))
-
-          // Checking other state variable
-
-          const historicalRewards = await rewardPool.historicalRewards()
-          const rewardRate = await rewardPool.rewardRate()
-          const currentRewards = await rewardPool.currentRewards()
-          const queuedRewards = await rewardPool.queuedRewards()
-          const duration = await rewardPool.duration()
-
-          const rewardRatePerSecond = stakedHarvested.add(magicBal).div(duration)
-
-          expect(historicalRewards).to.equal(stakedHarvested.add(magicBal)).to.equal(currentRewards)
-          expect(rewardRate).to.equal(rewardRatePerSecond)
-          expect(queuedRewards).to.equal(0)
-        })
       })
     })
   })

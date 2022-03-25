@@ -13,7 +13,6 @@ interface IMagicDepositor{
     function deposit(uint256) external;
     function depositFor(uint256 amount, address to) external;
     function claimMintedShares(uint256 atlasDepositIndex,bool stake) external returns (uint256);
-    function earmarkRewards() external ;
     function update() external ;
     function getUserDepositedMagic(uint256 atlasDepositId, address user) external view returns (uint256);
 }

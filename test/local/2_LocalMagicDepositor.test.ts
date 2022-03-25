@@ -167,7 +167,7 @@ describe('Local - MagicDepositor', () => {
           magicDepositor.harvestForNextDeposit(),
         ])
 
-        expect(magicBalancePost.sub(depositAmount)).to.be.gt(magicBalancePre)
+        expect(magicBalancePost.sub(depositAmount)).to.gte(magicBalancePre)
         // Its (harvestForNextDeposit) zero now because 50% for stakeRewards and 50% for treasury
         // expect(internalMagicAccountingPost).to.be.gte(internalMagicAccountingPre)
         expect(internalMagicAccountingPost).to.gte(internalMagicAccountingPre)
