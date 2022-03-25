@@ -1,10 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { DeployFunction } from 'hardhat-deploy/types'
-import {
-  ATLAS_MINE_ADDRESS,
-  LEGION_NFT_ADDRESS,
-  TREASURE_NFT_ADDRESS
-} from '../../utils/constants'
+import { ATLAS_MINE_ADDRESS, LEGION_NFT_ADDRESS, TREASURE_NFT_ADDRESS } from '../../utils/constants'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {

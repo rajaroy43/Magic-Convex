@@ -13,6 +13,10 @@ import {
   ONE_MONTH_IN_SECONDS,
   PRECISION,
   ONE_THOUSAND_MAGIC_BN,
+  ONE_LEGION,
+  ONE_TREAUSRE,
+  TREASURE_TOKEN_IDS,
+  LEGION_TOKEN_IDS,
 } from '../utils/constants'
 import { awaitTx } from '../utils/AwaitTx'
 import { AtlasMine__factory } from '../typechain'
@@ -339,6 +343,65 @@ describe('MagicDepositor', () => {
         checkAtlasDepositHasBeenActivated(secondAtlasDeposit)
         checkAtlasDepositHasBeenInitialized(thirdAtlasDeposit)
       })
+    })
+  })
+
+  describe('NFT staking', () => {
+    const depositAmount = ONE_THOUSAND_MAGIC_BN
+
+    const fixture = deployments.createFixture(async () => {
+      const baseFixture = await BaseFixture()
+      const { alice, bob, carol, magicToken, magicDepositor } = baseFixture
+
+      for (let i = 0; i < 3; i++) {
+        await Promise.all([
+          depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
+          depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
+          depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount),
+        ])
+        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1)
+      }
+
+      await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
+      return { ...baseFixture }
+    })
+
+    it('Staking Treasure', async () => {
+      const { alice, magicDepositor, treasure, atlasMine } = await fixture()
+      const TREASURE_TOKEN_ID = TREASURE_TOKEN_IDS[0]
+      const treasureBoost = await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID, ONE_TREAUSRE)
+      const prePendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+
+      await treasure
+        .connect(alice)
+        .safeTransferFrom(alice.address, magicDepositor.address, TREASURE_TOKEN_ID, ONE_TREAUSRE, [])
+      await magicDepositor.stakeTreasure(TREASURE_TOKEN_ID, ONE_TREAUSRE)
+
+      // increase the boots
+      const magicDepositorBoost = await atlasMine.getUserBoost(magicDepositor.address)
+      expect(magicDepositorBoost).to.equal(treasureBoost)
+      // increase pendingReward
+      const postPendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+      expect(postPendingRewards).to.gt(prePendingRewards)
+    })
+
+    it('Staking Legion', async () => {
+      const { alice, magicDepositor, legion, atlasMine } = await fixture()
+      const LEGION_TOKEN_ID = LEGION_TOKEN_IDS[0]
+      const legionBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID, ONE_LEGION)
+      const prePendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+
+      await legion
+        .connect(alice)
+        ['safeTransferFrom(address,address,uint256)'](alice.address, magicDepositor.address, LEGION_TOKEN_ID)
+      await magicDepositor.stakeLegion(LEGION_TOKEN_ID)
+
+      // increase the boots
+      const magicDepositorBoost = await atlasMine.getUserBoost(magicDepositor.address)
+      expect(magicDepositorBoost).to.equal(legionBoost)
+      // increase pendingReward
+      const postPendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+      expect(postPendingRewards).to.gt(prePendingRewards)
     })
   })
 

@@ -37,9 +37,9 @@ export const TEN_MILLION_MAGIC_BN = parseEther('10000000')
 export const PRECISION = parseEther('1')
 
 export const ONE_TREAUSRE = 1
-export const TREASURE_TOKEN_IDS = [117,133,151,73]
+export const TREASURE_TOKEN_IDS = [117, 133, 151, 73]
 export const ONE_LEGION = 1
-export const LEGION_TOKEN_IDS = [25855,25856,25857,25858]
+export const LEGION_TOKEN_IDS = [25855, 25856, 25857, 25858]
 
 /**
  * Configuration of Magic Depositor

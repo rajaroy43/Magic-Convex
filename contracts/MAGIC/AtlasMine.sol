@@ -14,7 +14,6 @@ import '@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpg
 import './IMasterOfCoin.sol';
 import './ILegionMetadataStore.sol';
 
-
 contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155HolderUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
@@ -484,23 +483,24 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
     }
 
     function isLegion1_1(uint256 _tokenId) public view virtual returns (bool) {
-        try ILegionMetadataStore(legionMetadataStore).metadataForLegion(_tokenId) returns (
-            LegionMetadata memory metadata
-        ) {
-            return
-                metadata.legionGeneration == LegionGeneration.GENESIS &&
-                metadata.legionRarity == LegionRarity.LEGENDARY;
-        } catch Error(
-            string memory /*reason*/
-        ) {
-            return false;
-        } catch Panic(uint256) {
-            return false;
-        } catch (
-            bytes memory /*lowLevelData*/
-        ) {
-            return false;
-        }
+        return false; // difficult to mock legionMetadataStore
+        // try ILegionMetadataStore(legionMetadataStore).metadataForLegion(_tokenId) returns (
+        //     LegionMetadata memory metadata
+        // ) {
+        //     return
+        //         metadata.legionGeneration == LegionGeneration.GENESIS &&
+        //         metadata.legionRarity == LegionRarity.LEGENDARY;
+        // } catch Error(
+        //     string memory /*reason*/
+        // ) {
+        //     return false;
+        // } catch Panic(uint256) {
+        //     return false;
+        // } catch (
+        //     bytes memory /*lowLevelData*/
+        // ) {
+        //     return false;
+        // }
     }
 
     function getNftBoost(
@@ -510,23 +510,26 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
     ) public view virtual returns (uint256) {
         if (_nft == treasure) {
             return getTreasureBoost(_tokenId, _amount);
-        } else if (_nft == legion) {
-            try ILegionMetadataStore(legionMetadataStore).metadataForLegion(_tokenId) returns (
-                LegionMetadata memory metadata
-            ) {
-                return getLegionBoost(uint256(metadata.legionGeneration), uint256(metadata.legionRarity));
-            } catch Error(
-                string memory /*reason*/
-            ) {
-                return 0;
-            } catch Panic(uint256) {
-                return 0;
-            } catch (
-                bytes memory /*lowLevelData*/
-            ) {
-                return 0;
-            }
+        } else {
+            return getLegionBoost(1, 1); // due to difficult to mock legionMetadataStore
         }
+        // } else if (_nft == legion) {
+        //     try ILegionMetadataStore(legionMetadataStore).metadataForLegion(_tokenId) returns (
+        //         LegionMetadata memory metadata
+        //     ) {
+        //         return getLegionBoost(uint256(metadata.legionGeneration), uint256(metadata.legionRarity));
+        //     } catch Error(
+        //         string memory /*reason*/
+        //     ) {
+        //         return 0;
+        //     } catch Panic(uint256) {
+        //         return 0;
+        //     } catch (
+        //         bytes memory /*lowLevelData*/
+        //     ) {
+        //         return 0;
+        //     }
+        // }
 
         return 0;
     }

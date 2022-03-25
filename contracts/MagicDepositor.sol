@@ -8,8 +8,9 @@ import './MAGIC/IAtlasMine.sol';
 import './mgMagicToken.sol';
 import { AtlasDeposit, AtlasDepositLibrary } from './libs/AtlasDeposit.sol';
 import './MagicDepositorConfig.sol';
+import './MagicStaking.sol';
 
-contract MagicDepositor is MagicDepositorConfig {
+contract MagicDepositor is MagicDepositorConfig, MagicStaking {
     using SafeERC20 for IERC20;
     using AtlasDepositLibrary for AtlasDeposit;
 
@@ -18,10 +19,8 @@ contract MagicDepositor is MagicDepositorConfig {
     uint256 private constant ONE_MONTH = 30 days;
     uint256 private constant PRECISION = 1e18;
 
-    /** Immutables */
-    IERC20 private immutable magic;
-    mgMagicToken private immutable mgMagic;
-    IAtlasMine private immutable atlasMine;
+    IERC20 public magic;
+    mgMagicToken public mgMagic;
 
     /** State variables */
     mapping(uint256 => AtlasDeposit) public atlasDeposits;
@@ -45,11 +44,12 @@ contract MagicDepositor is MagicDepositorConfig {
     constructor(
         address _magic,
         address _mgMagic,
-        address _atlasMine
-    ) {
+        address _atlasMine,
+        address _treasure,
+        address _legion
+    ) MagicStaking(_atlasMine, _treasure, _legion) {
         magic = IERC20(_magic);
         mgMagic = mgMagicToken(_mgMagic);
-        atlasMine = IAtlasMine(_atlasMine);
     }
 
     /** USER EXPOSED FUNCTIONS */
