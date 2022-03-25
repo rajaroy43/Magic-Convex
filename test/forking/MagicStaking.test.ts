@@ -9,9 +9,9 @@ import {
   ONE_TREAUSRE,
   TREASURE_TOKEN_IDS,
   LEGION_TOKEN_IDS,
-} from '../utils/constants'
-import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../utils/MagicNftStaking'
-import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../typechain'
+} from '../../utils/constants'
+import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../../utils/MagicNftStaking'
+import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../../typechain'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
 describe('MagicStaking', () => {

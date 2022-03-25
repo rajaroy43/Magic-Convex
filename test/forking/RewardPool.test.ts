@@ -2,13 +2,13 @@ import { expect } from 'chai'
 import { BaseFixture } from './fixtures/BaseFixture'
 import { BigNumber, ethers, Wallet } from 'ethers'
 
-import { ONE_MAGIC_BN, ONE_MONTH_IN_SECONDS, ONE_THOUSAND_MAGIC_BN } from '../utils/constants'
-import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../utils/MagicNftStaking'
-import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../typechain'
+import { ONE_MAGIC_BN, ONE_MONTH_IN_SECONDS, ONE_THOUSAND_MAGIC_BN } from '../../utils/constants'
+import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../../utils/MagicNftStaking'
+import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../../typechain'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { deployments, timeAndMine } from 'hardhat'
-import { depositMagicInGuild } from '../utils/DepositMagicInGuild'
-import { stakeMgMagic } from '../utils/StakeRewardPool'
+import { depositMagicInGuild } from '../../utils/DepositMagicInGuild'
+import { stakeMgMagic } from '../../utils/StakeRewardPool'
 const { AddressZero } = ethers.constants
 describe('Reward Pool', () => {
   it('Reward Pool Initialized', async () => {

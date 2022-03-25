@@ -9,7 +9,7 @@ import './mgMagicToken.sol';
 import { AtlasDeposit, AtlasDepositLibrary } from './libs/AtlasDeposit.sol';
 import './MagicDepositorConfig.sol';
 
-contract MagicDepositor is MagicDepositorConfig {
+contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
     using SafeERC20 for IERC20;
     using SafeERC20 for mgMagicToken;
     using AtlasDepositLibrary for AtlasDeposit;

@@ -1,6 +1,6 @@
 import { deployments } from 'hardhat'
-import { AtlasMine, MasterOfCoin, Magic, MgMagicToken, XmgMagicToken, MagicDepositor, IERC20 } from '../../typechain'
-import { TEN_MILLION_MAGIC_BN, ONE_YEAR_IN_SECONDS, MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG } from '../../utils/constants'
+import { AtlasMine, MasterOfCoin, Magic, MgMagicToken, XmgMagicToken, MagicDepositor, IERC20, RewardPool } from '../../../typechain'
+import { TEN_MILLION_MAGIC_BN, ONE_YEAR_IN_SECONDS, MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG } from '../../../utils/constants'
 import { parseEther } from 'ethers/lib/utils'
 
 export const TreasureFixture = deployments.createFixture(async ({ ethers, getNamedAccounts }) => {
@@ -56,20 +56,20 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     await MagicDepositor.deploy(magicToken.address, mgMagicToken.address, atlasMine.address)
   )
 
+  const RewardPool = await ethers.getContractFactory('RewardPool')
+  const rewardPool = <RewardPool>await RewardPool.deploy(mgMagicToken.address,magicToken.address,magicDepositor.address,magicDepositor.address)
+
+
   await magicDepositor.setConfig(
     MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.rewards,
     MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.treasury,
     deployer,
-    xmgMagicToken.address
+    rewardPool.address
   )
   await mgMagicToken.transferOwnership(magicDepositor.address).then((tx) => tx.wait())
 
-  const [stakeRewardSplit, treasurySplit, treasuryAddress, stakingAddress] = await Promise.all([
-    magicDepositor.stakeRewardSplit(),
-    magicDepositor.treasurySplit(),
-    magicDepositor.treasury(),
-    magicDepositor.staking(),
-  ])
+  const [stakeRewardSplit, treasurySplit, treasuryAddress, stakingAddress] = await magicDepositor.getConfig()
+ 
 
   await magicToken.approve(magicDepositor.address, ethers.constants.MaxUint256)
 
@@ -87,5 +87,6 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     treasurySplit,
     treasuryAddress,
     stakingAddress,
+    rewardPool
   }
 })
