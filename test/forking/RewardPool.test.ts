@@ -116,8 +116,6 @@ describe('Reward Pool', () => {
           // Can't withdraw now by alice because 0 amount in the pool contract
           await expect(rewardPool.withdraw(stakedAmount, true)).to.be.reverted
         }
-
-
       })
     })
   })

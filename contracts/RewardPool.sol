@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import {IMagicDepositor} from './Interfaces.sol';
 import './libs/MathUtil.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
@@ -133,9 +132,7 @@ contract RewardPool{
         uint256 reward = earned(_account);
         if (reward > 0) {
             rewards[_account] = 0;
-            rewardToken.safeApprove(magicDeposits,0);
-            rewardToken.safeApprove(magicDeposits,reward);
-            IMagicDepositor(magicDeposits).depositFor(reward,_account);
+            rewardToken.safeTransfer(_account, reward);
             emit RewardPaid(_account, reward);
         }
     }
