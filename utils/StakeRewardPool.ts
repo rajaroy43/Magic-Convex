@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumberish, Wallet } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
-import {  MgMagicToken, RewardPool } from '../typechain'
+import { PrMagicToken, RewardPool } from '../typechain'
 import { ARBITRUM_BLOCK_GAS_LIMIT } from './constants'
 
 /**
@@ -10,9 +10,9 @@ import { ARBITRUM_BLOCK_GAS_LIMIT } from './constants'
  * @param guild => expects to have signer connected
  * @param amount
  */
-export async function stakeMgMagic(
+export async function stakePrMagic(
   wallet: SignerWithAddress | Wallet,
-  token: MgMagicToken,
+  token: PrMagicToken,
   rewardPool: RewardPool,
   amount: BigNumberish,
   alreadyApproved = false

@@ -15,5 +15,5 @@ interface IMagicDepositor{
     function claimMintedShares(uint256 atlasDepositIndex,bool stake) external returns (uint256);
     function earmarkRewards() external ;
     function update() external ;
-    function getUserDeposittedMagic(uint256 atlasDepositId, address user) external view returns (uint256);
+    function getUserDepositedMagic(uint256 atlasDepositId, address user) external view returns (uint256);
 }

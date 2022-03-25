@@ -4,7 +4,7 @@ import {
   MAGIC_TOKEN_ADDRESS,
   MAGIC_DEPOSITOR_CONTRACT_NAME,
   REWARD_POOL_CONTRACT_NAME,
-  MG_MAGIC_TOKEN_CONTRACT_NAME,
+  PR_MAGIC_TOKEN_CONTRACT_NAME,
   MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG,
 } from '../../utils/constants'
 import { MagicDepositor, MagicDepositor__factory } from '../../typechain'
@@ -20,8 +20,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const magicDepositor = await getContract(MAGIC_DEPOSITOR_CONTRACT_NAME) as MagicDepositor
   const {address:magicDepositorAddress,signer} = magicDepositor
-  const { address: mgMagicTokenAddr } = await getContract(MG_MAGIC_TOKEN_CONTRACT_NAME)
-  const args = [mgMagicTokenAddr, MAGIC_TOKEN_ADDRESS, magicDepositorAddress,magicDepositorAddress];
+  const { address: prMagicTokenAddr } = await getContract(PR_MAGIC_TOKEN_CONTRACT_NAME)
+  const args = [prMagicTokenAddr, MAGIC_TOKEN_ADDRESS, magicDepositorAddress,magicDepositorAddress];
    const { address: rewardPoolAddress } = await deploy(REWARD_POOL_CONTRACT_NAME, {
      args: args,
      from: deployer,

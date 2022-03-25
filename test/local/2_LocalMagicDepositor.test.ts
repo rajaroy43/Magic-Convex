@@ -63,7 +63,7 @@ describe('Local - MagicDepositor', () => {
           checkAtlasDepositHasBeenInitialized(atlasDeposit)
           expect(accumulatedMagic).to.be.equal(ONE_MAGIC_BN)
           expect(await magicToken.balanceOf(magicDepositor.address)).to.be.equal(ONE_MAGIC_BN)
-          expect(await magicDepositor.getUserDeposittedMagic(1, alice.address)).to.be.equal(ONE_MAGIC_BN)
+          expect(await magicDepositor.getUserDepositedMagic(1, alice.address)).to.be.equal(ONE_MAGIC_BN)
         }
 
         // Secondary user deposit
@@ -139,10 +139,10 @@ describe('Local - MagicDepositor', () => {
       })
 
       it('correctly computes shares', async () => {
-        const { alice, mgMagicToken, magicDepositor } = await fixture()
+        const { alice, prMagicToken, magicDepositor } = await fixture()
 
         await expect(() => magicDepositor.connect(alice).deposit(depositAmount)).to.changeTokenBalance(
-          mgMagicToken,
+          prMagicToken,
           magicDepositor,
           depositAmount.mul(3)
         )
@@ -381,7 +381,7 @@ describe('Local - MagicDepositor', () => {
     })
 
     it('correctly transfer shares to the claimant', async () => {
-      const { alice, bob, magicToken, mgMagicToken, magicDepositor } = await TreasureFixture()
+      const { alice, bob, magicToken, prMagicToken, magicDepositor } = await TreasureFixture()
       // In first month
       {
         await Promise.all([
@@ -396,7 +396,7 @@ describe('Local - MagicDepositor', () => {
         ])
 
         await expect(magicDepositor.connect(alice).claimMintedShares(1,false))
-          .to.emit(mgMagicToken, 'Transfer')
+          .to.emit(prMagicToken, 'Transfer')
           .withArgs(magicDepositor.address, alice.address, depositAmount)
       }
 
@@ -418,7 +418,7 @@ describe('Local - MagicDepositor', () => {
         expect(aliceMintedShares).to.be.equal(bobMintedShares).and.equal(depositAmount)
 
         await expect(magicDepositor.connect(alice).claimMintedShares(depositIndex,false))
-          .to.emit(mgMagicToken, 'Transfer')
+          .to.emit(prMagicToken, 'Transfer')
           .withArgs(magicDepositor.address, alice.address, aliceMintedShares)
       }
 
@@ -440,13 +440,13 @@ describe('Local - MagicDepositor', () => {
         expect(aliceMintedShares).to.be.equal(bobMintedShares).and.equal(depositAmount)
 
         await expect(magicDepositor.connect(alice).claimMintedShares(depositIndex,false))
-          .to.emit(mgMagicToken, 'Transfer')
+          .to.emit(prMagicToken, 'Transfer')
           .withArgs(magicDepositor.address, alice.address, aliceMintedShares)
       }
     })
 
-    it('Staking mgMagic token afterClaiming', async () => {
-      const { alice, bob, magicToken, mgMagicToken, magicDepositor, rewardPool } = await TreasureFixture()
+    it('Staking prMagic token afterClaiming', async () => {
+      const { alice, bob, magicToken, prMagicToken, magicDepositor, rewardPool } = await TreasureFixture()
       // In first month
       {
         await Promise.all([
@@ -461,11 +461,11 @@ describe('Local - MagicDepositor', () => {
         ])
 
         await expect(magicDepositor.connect(alice).claimMintedShares(1, true))
-          .to.emit(mgMagicToken, 'Transfer')
+          .to.emit(prMagicToken, 'Transfer')
           .withArgs(magicDepositor.address, rewardPool.address, depositAmount)
 
         await expect(magicDepositor.connect(bob).claimMintedShares(1, true))
-          .to.emit(mgMagicToken, 'Transfer')
+          .to.emit(prMagicToken, 'Transfer')
           .withArgs(magicDepositor.address, rewardPool.address, depositAmount)
       }
 
@@ -486,12 +486,12 @@ describe('Local - MagicDepositor', () => {
         ])
 
         await expect(magicDepositor.connect(alice).claimMintedShares(depositIndex, true)).to.emit(
-          mgMagicToken,
+          prMagicToken,
           'Transfer'
         )
 
         await expect(magicDepositor.connect(bob).claimMintedShares(depositIndex, true))
-        .to.emit(mgMagicToken, 'Transfer')
+        .to.emit(prMagicToken, 'Transfer')
 
         const stakedAlice = await rewardPool.balanceOf(alice.address)
         expect(stakedAlice).to.be.equal(depositAmount.mul(2))
@@ -518,11 +518,11 @@ describe('Local - MagicDepositor', () => {
         expect(aliceMintedShares).to.be.equal(bobMintedShares).and.equal(depositAmount)
 
         await expect(magicDepositor.connect(alice).claimMintedShares(depositIndex, true))
-          .to.emit(mgMagicToken, 'Transfer')
+          .to.emit(prMagicToken, 'Transfer')
           .withArgs(magicDepositor.address, rewardPool.address, aliceMintedShares)
 
           await expect(magicDepositor.connect(bob).claimMintedShares(depositIndex, true))
-          .to.emit(mgMagicToken, 'Transfer')
+          .to.emit(prMagicToken, 'Transfer')
           .withArgs(magicDepositor.address, rewardPool.address, aliceMintedShares)
 
         const stakedAlice = await rewardPool.balanceOf(alice.address)

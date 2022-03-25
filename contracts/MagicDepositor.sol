@@ -5,13 +5,13 @@ import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import './MAGIC/IAtlasMine.sol';
 import {IRewards,IMagicDepositor} from"./Interfaces.sol";
-import './mgMagicToken.sol';
+import './prMagicToken.sol';
 import { AtlasDeposit, AtlasDepositLibrary } from './libs/AtlasDeposit.sol';
 import './MagicDepositorConfig.sol';
 
 contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
     using SafeERC20 for IERC20;
-    using SafeERC20 for mgMagicToken;
+    using SafeERC20 for prMagicToken;
     using AtlasDepositLibrary for AtlasDeposit;
 
     /** Constants */
@@ -21,7 +21,7 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
 
     /** Immutables */
     IERC20 private immutable magic;
-    mgMagicToken private immutable mgMagic;
+    prMagicToken private immutable prMagic;
     IAtlasMine private immutable atlasMine;
 
     /** State variables */
@@ -46,11 +46,11 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
 
     constructor(
         address _magic,
-        address _mgMagic,
+        address _prMagic,
         address _atlasMine
     ) {
         magic = IERC20(_magic);
-        mgMagic = mgMagicToken(_mgMagic);
+        prMagic = prMagicToken(_prMagic);
         atlasMine = IAtlasMine(_atlasMine);
     }
 
@@ -76,12 +76,12 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
         atlasDeposit.depositedMagicPerAddress[msg.sender] = 0;
 
         if(stake){
-            mgMagic.safeApprove(staking,0);
-            mgMagic.safeApprove(staking,claim);
+            prMagic.safeApprove(staking,0);
+            prMagic.safeApprove(staking,claim);
             IRewards(staking).stakeFor(msg.sender,claim);
         }
         else{
-            mgMagic.safeTransfer(msg.sender, claim);
+            prMagic.safeTransfer(msg.sender, claim);
         }
         emit ClaimMintedShares(msg.sender, atlasDepositIndex, claim);
         return claim;
@@ -117,7 +117,7 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
     }
 
     /** VIEW FUNCTIONS */
-    function getUserDeposittedMagic(uint256 atlasDepositId, address user) public override view returns (uint256) {
+    function getUserDepositedMagic(uint256 atlasDepositId, address user) public override view returns (uint256) {
         return atlasDeposits[atlasDepositId].depositedMagicPerAddress[user];
     }
 
@@ -193,16 +193,16 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
         atlasDeposit.isActive = true;
         uint256 accumulatedMagic = atlasDeposit.accumulatedMagic;
 
-        uint256 totalExistingShares = mgMagic.totalSupply();
+        uint256 totalExistingShares = prMagic.totalSupply();
 
         uint256 mintedShares = totalExistingShares > 0
-            ? (accumulatedMagic * mgMagic.totalSupply()) / heldMagic
+            ? (accumulatedMagic * prMagic.totalSupply()) / heldMagic
             : accumulatedMagic;
 
         atlasDeposit.mintedShares = mintedShares;
         heldMagic += accumulatedMagic;
 
-        mgMagic.mint(address(this), mintedShares);
+        prMagic.mint(address(this), mintedShares);
 
         uint256 depositAmount = accumulatedMagic + harvestForNextDeposit;
         magic.approve(address(atlasMine), depositAmount);

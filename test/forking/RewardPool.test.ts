@@ -8,12 +8,12 @@ import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../../typechain'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { deployments, timeAndMine } from 'hardhat'
 import { depositMagicInGuild } from '../../utils/DepositMagicInGuild'
-import { stakeMgMagic } from '../../utils/StakeRewardPool'
+import { stakePrMagic } from '../../utils/StakeRewardPool'
 const { AddressZero } = ethers.constants
 describe('Reward Pool', () => {
   it('Reward Pool Initialized', async () => {
     const {
-      mgMagicToken: { address: mgMagicTokenAddress },
+      prMagicToken: { address: prMagicTokenAddress },
       magicToken: { address: magicTokenAdrress },
       magicDepositor: { address: magicDepositorAddress },
       rewardPool,
@@ -22,7 +22,7 @@ describe('Reward Pool', () => {
     const rewardToken = await rewardPool.rewardToken()
     const magicDeposits = await rewardPool.magicDeposits()
     const operator = await rewardPool.operator()
-    expect(stakingToken.toLowerCase()).to.eql(mgMagicTokenAddress.toLowerCase())
+    expect(stakingToken.toLowerCase()).to.eql(prMagicTokenAddress.toLowerCase())
     expect(rewardToken.toLowerCase()).to.eql(magicTokenAdrress.toLowerCase())
     expect(magicDeposits.toLowerCase()).to.eql(magicDepositorAddress.toLowerCase())
     expect(operator.toLowerCase()).to.eql(magicDepositorAddress.toLowerCase())
@@ -34,7 +34,7 @@ describe('Reward Pool', () => {
     const fixture = deployments.createFixture(async () => {
       const depositAmount = ONE_THOUSAND_MAGIC_BN
       const baseFixture = await BaseFixture()
-      const { alice, bob, carol, magicToken, magicDepositor, mgMagicToken, rewardPool } = baseFixture
+      const { alice, bob, carol, magicToken, magicDepositor, prMagicToken, rewardPool } = baseFixture
 
       for (let i = 0; i < 3; i++) {
         await Promise.all([
@@ -59,8 +59,8 @@ describe('Reward Pool', () => {
     })
 
     describe('User Staking', () => {
-      it('Staking mgMagic token to reward pool by users', async () => {
-        const { alice, bob, magicToken, rewardPool, mgMagicToken } = await fixture()
+      it('Staking prMagic token to reward pool by users', async () => {
+        const { alice, bob, magicToken, rewardPool, prMagicToken } = await fixture()
 
         // First ever user stake
         {
@@ -74,7 +74,7 @@ describe('Reward Pool', () => {
 
         // Secondary user stake
         {
-          await mgMagicToken.connect(bob).approve(rewardPool.address, ethers.constants.MaxUint256)
+          await prMagicToken.connect(bob).approve(rewardPool.address, ethers.constants.MaxUint256)
           await expect(rewardPool.connect(bob).stake(stakedAmount))
             .to.emit(rewardPool, 'Staked')
             .withArgs(bob.address, stakedAmount)
@@ -102,18 +102,18 @@ describe('Reward Pool', () => {
     describe('User Withdrawing staked amount', () => {
       const fixtureAfterStaking = deployments.createFixture(async () => {
         const baseFixture = await fixture()
-        const { alice, bob, carol, mgMagicToken, rewardPool, magicToken, magicDepositor } = baseFixture
+        const { alice, bob, carol, prMagicToken, rewardPool, magicToken, magicDepositor } = baseFixture
 
-        await stakeMgMagic(alice, mgMagicToken, rewardPool, stakedAmount, true)
-        await stakeMgMagic(bob, mgMagicToken, rewardPool, stakedAmount)
-        await stakeMgMagic(carol, mgMagicToken, rewardPool, stakedAmount)
+        await stakePrMagic(alice, prMagicToken, rewardPool, stakedAmount, true)
+        await stakePrMagic(bob, prMagicToken, rewardPool, stakedAmount)
+        await stakePrMagic(carol, prMagicToken, rewardPool, stakedAmount)
         return { ...baseFixture }
       })
 
-      it('withdrawing mgMagic token from reward pool by users', async () => {
+      it('withdrawing prMagic token from reward pool by users', async () => {
         const { alice, rewardPool } = await fixtureAfterStaking()
 
-        // 3mgMagic token staked , so if first withdraw then only 2mgMagic will be remaining
+        // 3prMagic token staked , so if first withdraw then only 2prMagic will be remaining
         {
           await expect(rewardPool.connect(alice).withdraw(stakedAmount, true))
             .to.emit(rewardPool, 'Withdrawn')
@@ -128,7 +128,7 @@ describe('Reward Pool', () => {
         expect(await rewardPool.lastUpdateTime()).to.be.equal(0)
       })
 
-      describe('Earmark rewards and donating mgMagic to rewardPool ', () => {
+      describe('Earmark rewards and donating prMagic to rewardPool ', () => {
         it('Earmark Rewards', async () => {
           const { alice, magicDepositor, rewardPool } = await fixtureAfterStaking()
 
@@ -140,7 +140,7 @@ describe('Reward Pool', () => {
 
           const beforecurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
 
-          const beforeatlasDepositAmount = await magicDepositor.getUserDeposittedMagic(
+          const beforeatlasDepositAmount = await magicDepositor.getUserDepositedMagic(
             beforecurrentAtlasDepositId,
             alice.address
 		  )
@@ -158,7 +158,7 @@ describe('Reward Pool', () => {
 		const reward = events[events.length-1].args['reward']
 
           const afterCurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
-          const afterAtlasDepositAmount = await magicDepositor.getUserDeposittedMagic(
+          const afterAtlasDepositAmount = await magicDepositor.getUserDepositedMagic(
             afterCurrentAtlasDepositId,
             alice.address
 		  )
@@ -182,8 +182,8 @@ describe('Reward Pool', () => {
           expect(queuedRewards).to.equal(0)
         })
 
-        it('Earmark rewards After Donating mgMagic token', async () => {
-          const { alice, bob, magicToken, mgMagicToken, magicDepositor, rewardPool } = await fixtureAfterStaking()
+        it('Earmark rewards After Donating prMagic token', async () => {
+          const { alice, bob, magicToken, prMagicToken, magicDepositor, rewardPool } = await fixtureAfterStaking()
           const magicBal = await magicToken.balanceOf(alice.address)
 		  const contractMagicBal = await magicToken.balanceOf(rewardPool.address)
 		  
@@ -207,7 +207,7 @@ describe('Reward Pool', () => {
 		  await timeAndMine.increaseTime(threeDay)
 
           const beforeCurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
-          const beforeAtlasDepositAmount = await magicDepositor.getUserDeposittedMagic(
+          const beforeAtlasDepositAmount = await magicDepositor.getUserDepositedMagic(
             beforeCurrentAtlasDepositId,
             alice.address
           )
@@ -216,7 +216,7 @@ describe('Reward Pool', () => {
           const events = (await (await rewardPool.connect(alice).getReward(alice.address)).wait()).events
 
           const afterCurrentAtlasDepositId = await magicDepositor.currentAtlasDepositIndex()
-          const afterAtlasDepositAmount = await magicDepositor.getUserDeposittedMagic(
+          const afterAtlasDepositAmount = await magicDepositor.getUserDepositedMagic(
             afterCurrentAtlasDepositId,
             alice.address
 		  )
