@@ -1,22 +1,6 @@
 import { deployments } from 'hardhat'
-import {
-  AtlasMine,
-  MasterOfCoin,
-  Magic,
-  MgMagicToken,
-  XmgMagicToken,
-  MagicDepositor,
-  Treasure,
-  Legion,
-} from '../../typechain'
-import {
-  TEN_MILLION_MAGIC_BN,
-  ONE_YEAR_IN_SECONDS,
-  MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG,
-  ONE_TREAUSRE,
-  TREASURE_TOKEN_IDS,
-  LEGION_TOKEN_IDS,
-} from '../../utils/constants'
+import { AtlasMine, MasterOfCoin, Magic, PrMagicToken, XmgMagicToken, MagicDepositor,Legion,Treasure, RewardPool } from '../../typechain'
+import { TEN_MILLION_MAGIC_BN, ONE_YEAR_IN_SECONDS, MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG, LEGION_TOKEN_IDS, ONE_TREAUSRE, TREASURE_TOKEN_IDS } from '../../utils/constants'
 import { parseEther } from 'ethers/lib/utils'
 
 export const TreasureFixture = deployments.createFixture(async ({ ethers, getNamedAccounts }) => {
@@ -80,32 +64,37 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
   )
 
   // deploy Precious contracts
-  const MgMagicToken = await ethers.getContractFactory('mgMagicToken')
-  const mgMagicToken = <MgMagicToken>await MgMagicToken.deploy()
+  const PrMagicToken = await ethers.getContractFactory('prMagicToken')
+  const prMagicToken = <PrMagicToken>await PrMagicToken.deploy()
 
   const XmgMagicToken = await ethers.getContractFactory('xmgMagicToken')
-  const xmgMagicToken = <XmgMagicToken>await XmgMagicToken.deploy(mgMagicToken.address)
+  const xmgMagicToken = <XmgMagicToken>await XmgMagicToken.deploy(prMagicToken.address)
 
   const MagicDepositor = await ethers.getContractFactory('MagicDepositor')
   const magicDepositor = <MagicDepositor>(
     await MagicDepositor.deploy(
       magicToken.address,
-      mgMagicToken.address,
+      prMagicToken.address,
       atlasMine.address,
       treasure.address,
       legion.address
     )
   )
 
+  const RewardPool = await ethers.getContractFactory('RewardPool')
+  const rewardPool = <RewardPool>await RewardPool.deploy(prMagicToken.address,magicToken.address,magicDepositor.address)
+
+
   await magicDepositor.setConfig(
     MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.rewards,
     MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.treasury,
     deployer,
-    xmgMagicToken.address
+    rewardPool.address
   )
-  await mgMagicToken.transferOwnership(magicDepositor.address).then((tx) => tx.wait())
+  await prMagicToken.transferOwnership(magicDepositor.address).then((tx) => tx.wait())
 
   const [stakeRewardSplit, treasurySplit, treasuryAddress, stakingAddress] = await magicDepositor.getConfig()
+ 
 
   await magicToken.approve(magicDepositor.address, ethers.constants.MaxUint256)
 
@@ -117,13 +106,14 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     mallory,
     atlasMine,
     magicToken: magicToken as any,
-    mgMagicToken,
+    prMagicToken,
     magicDepositor,
     stakeRewardSplit,
     treasurySplit,
     treasuryAddress,
     stakingAddress,
+    rewardPool,
     treasure,
-    legion,
+    legion
   }
 })

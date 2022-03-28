@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { DeployFunction } from 'hardhat-deploy/types'
-import { MG_MAGIC_TOKEN_CONTRACT_NAME } from '../../utils/constants'
+import {PR_MAGIC_TOKEN_CONTRACT_NAME } from '../../utils/constants'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -9,8 +9,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   } = hre
   const { deployer } = await getNamedAccounts()
 
-  const { address } = await deploy(MG_MAGIC_TOKEN_CONTRACT_NAME, { from: deployer })
-  hre.tracer.nameTags[address] = 'mgMagic'
+  const { address } = await deploy(PR_MAGIC_TOKEN_CONTRACT_NAME, { from: deployer })
+  hre.tracer.nameTags[address] = 'prMagicToken'
 }
 export default func
-func.tags = ['mgMagic']
+func.tags = ['prMagicToken']

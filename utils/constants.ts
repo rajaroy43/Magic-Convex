@@ -17,10 +17,11 @@ export const ARBITRUM_BLOCK_GAS_LIMIT = 200_000_000
 /**
  * Contract names
  */
-export const MG_MAGIC_TOKEN_CONTRACT_NAME = 'mgMagicToken'
+export const PR_MAGIC_TOKEN_CONTRACT_NAME = 'prMagicToken'
 export const XMG_MAGIC_TOKEN_CONTRACT_NAME = 'xmgMagicToken'
 export const MAGIC_DEPOSITOR_CONTRACT_NAME = 'MagicDepositor'
 export const MAGIC_STAKING_CONTRACT_NAME = 'MagicStaking'
+export const REWARD_POOL_CONTRACT_NAME = 'RewardPool'
 
 /**
  * Some unit variables
@@ -45,7 +46,7 @@ export const LEGION_TOKEN_IDS = [25855, 25856, 25857, 25858]
  * Configuration of Magic Depositor
  */
 export const MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG = {
-  treasury: parseEther('0.25'), // 25% of harvested amounts will go to treasury
-  rewards: parseEther('0.25'), // 25% of harvested amounts will go to user rewards
-  // the rest (50%) will be kept by the MagicDepositor to be auto-compounded
+  treasury: parseEther('0.5'), // 50% of harvested amounts will go to treasury
+  rewards: parseEther('0.5'), // 50% of harvested amounts will go to user rewards
+  // the rest (0%) will be kept by the MagicDepositor to be auto-compounded
 }

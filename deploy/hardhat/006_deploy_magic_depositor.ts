@@ -5,11 +5,11 @@ import {
   ATLAS_MINE_ADDRESS,
   TREASURE_NFT_ADDRESS,
   LEGION_NFT_ADDRESS,
-  MG_MAGIC_TOKEN_CONTRACT_NAME,
+  PR_MAGIC_TOKEN_CONTRACT_NAME,
   MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG,
-  XMG_MAGIC_TOKEN_CONTRACT_NAME,
+  REWARD_POOL_CONTRACT_NAME,
 } from '../../utils/constants'
-import { MagicDepositor__factory, MgMagicToken } from '../../typechain'
+import { MagicDepositor__factory,  PrMagicToken} from '../../typechain'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -19,22 +19,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   } = hre
   const { deployer } = await getNamedAccounts()
 
-  const mgMagicToken = (await getContract(MG_MAGIC_TOKEN_CONTRACT_NAME)) as MgMagicToken
-  const { address: xmgMagicTokenAddr } = await getContract(XMG_MAGIC_TOKEN_CONTRACT_NAME)
-
+  const prMagicToken = (await getContract(PR_MAGIC_TOKEN_CONTRACT_NAME)) as PrMagicToken
+  
   const { address: magicDepositorAddress } = await deploy('MagicDepositor', {
-    args: [MAGIC_TOKEN_ADDRESS, mgMagicToken.address, ATLAS_MINE_ADDRESS, TREASURE_NFT_ADDRESS, LEGION_NFT_ADDRESS],
+    args: [MAGIC_TOKEN_ADDRESS, prMagicToken.address, ATLAS_MINE_ADDRESS, TREASURE_NFT_ADDRESS, LEGION_NFT_ADDRESS],
     from: deployer,
   })
 
-  await mgMagicToken.transferOwnership(magicDepositorAddress).then((tx) => tx.wait())
-
-  await MagicDepositor__factory.connect(magicDepositorAddress, mgMagicToken.signer).setConfig(
-    MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.rewards,
-    MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.treasury,
-    deployer,
-    xmgMagicTokenAddr
-  )
+  await prMagicToken.transferOwnership(magicDepositorAddress).then((tx) => tx.wait())
 
   hre.tracer.nameTags[magicDepositorAddress] = 'MagicDepositor'
 }

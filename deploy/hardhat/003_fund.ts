@@ -20,8 +20,8 @@ import { impersonate } from '../../utils/Impersonate'
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const token = IERC20__factory.connect(MAGIC_TOKEN_ADDRESS, hre.ethers.provider)
   const masterOfCoin = MasterOfCoin__factory.connect(ATLAS_MASTER_OF_COIN_ADDRESS, hre.ethers.provider)
-  const legion = IERC721__factory.connect(LEGION_NFT_ADDRESS, hre.ethers.provider)
-  const treasure = IERC1155__factory.connect(TREASURE_NFT_ADDRESS, hre.ethers.provider)
+  const legion = IERC721__factory.connect(LEGION_NFT_ADDRESS,hre.ethers.provider)
+  const treasure = IERC1155__factory.connect(TREASURE_NFT_ADDRESS,hre.ethers.provider)
 
   const [alice, bob, carol] = await ethers.getSigners()
 
@@ -66,7 +66,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     let { timestamp } = await hre.ethers.provider.getBlock('latest')
     await timeAndMine.setTimeNextBlock(++timestamp)
-    await masterOfCoin
+    await masterOfCoin 
       .connect(masterOfCoinAdmin)
       .updateStreamTime(ATLAS_MINE_ADDRESS, ++timestamp, timestamp + ONE_YEAR_IN_SECONDS * 2)
   }
