@@ -8,8 +8,9 @@ import {IRewards,IMagicDepositor} from"./Interfaces.sol";
 import './prMagicToken.sol';
 import { AtlasDeposit, AtlasDepositLibrary } from './libs/AtlasDeposit.sol';
 import './MagicDepositorConfig.sol';
+import './MagicStaking.sol';
 
-contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
+contract MagicDepositor is IMagicDepositor,MagicDepositorConfig,MagicStaking {
     using SafeERC20 for IERC20;
     using SafeERC20 for prMagicToken;
     using AtlasDepositLibrary for AtlasDeposit;
@@ -19,10 +20,8 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
     uint256 private constant ONE_MONTH = 30 days;
     uint256 private constant PRECISION = 1e18;
 
-    /** Immutables */
-    IERC20 private immutable magic;
-    prMagicToken private immutable prMagic;
-    IAtlasMine private immutable atlasMine;
+    IERC20 public magic;
+    prMagicToken public prMagic;
 
     /** State variables */
     mapping(uint256 => AtlasDeposit) public atlasDeposits;
@@ -45,11 +44,12 @@ contract MagicDepositor is IMagicDepositor,MagicDepositorConfig {
     constructor(
         address _magic,
         address _prMagic,
-        address _atlasMine
-    ) {
+        address _atlasMine,
+        address _treasure,
+        address _legion
+    ) MagicStaking(_atlasMine, _treasure, _legion) {
         magic = IERC20(_magic);
         prMagic = prMagicToken(_prMagic);
-        atlasMine = IAtlasMine(_atlasMine);
     }
 
     /** USER EXPOSED FUNCTIONS */

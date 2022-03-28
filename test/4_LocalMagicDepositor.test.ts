@@ -1,16 +1,24 @@
 import { expect } from 'chai'
-import { TreasureFixture } from './fixtures/TreasureFixture'
+import { BigNumber, Wallet } from 'ethers'
 import { deployments, ethers, timeAndMine, network } from 'hardhat'
-import { BigNumber } from 'ethers'
-import { depositMagicInGuild } from '../../utils/DepositMagicInGuild'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+
+import { TreasureFixture } from './fixtures/TreasureFixture'
+import { depositMagicInGuild } from '../utils/DepositMagicInGuild'
 import {
   ONE_DAY_IN_SECONDS,
   ONE_MAGIC_BN,
   ONE_MONTH_IN_SECONDS,
   PRECISION,
   ONE_THOUSAND_MAGIC_BN,
-} from '../../utils/constants'
-import { awaitTx } from '../../utils/AwaitTx'
+  ONE_LEGION,
+  ONE_TREAUSRE,
+  TREASURE_TOKEN_IDS,
+  LEGION_TOKEN_IDS,
+} from '../utils/constants'
+import { awaitTx } from '../utils/AwaitTx'
+import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../utils/MagicNftStaking'
+import { AtlasMine, MagicDepositor, Treasure, Legion } from '../typechain'
 
 const { AddressZero } = ethers.constants
 
@@ -531,6 +539,430 @@ describe('Local - MagicDepositor', () => {
         const stakedbob = await rewardPool.balanceOf(bob.address)
         expect(stakedbob).to.be.equal(depositAmount.mul(3))
       }
+    })
+  })
+
+  describe('Nft Staking', () => {
+    describe('Treasure Staking/Unstaking/Withdrawing', () => {
+      const checkStakedTreasure = async (
+        wallet: Wallet | SignerWithAddress,
+        magicDepositor: MagicDepositor,
+        treasure: Treasure,
+        atlasMine: AtlasMine,
+        TREASURE_TOKEN_ID: number,
+        treasureBoost: BigNumber,
+        stakedTreasureAmount: number,
+        totalStaked: number
+      ) => {
+        await expect(
+          stakeTreasures(wallet, treasure, magicDepositor, TREASURE_TOKEN_ID, stakedTreasureAmount, '0x', true)
+        )
+          .to.emit(atlasMine, 'Staked')
+          .withArgs(treasure.address, TREASURE_TOKEN_ID, stakedTreasureAmount, treasureBoost)
+
+        expect(await atlasMine.treasureStaked(magicDepositor.address, TREASURE_TOKEN_ID)).to.be.equal(
+          stakedTreasureAmount
+        )
+
+        expect(await atlasMine.treasureStakedAmount(magicDepositor.address)).to.be.equal(totalStaked)
+      }
+
+      const checkUnStakedTreasure = async (
+        wallet: Wallet | SignerWithAddress,
+        magicDepositor: MagicDepositor,
+        treasure: Treasure,
+        atlasMine: AtlasMine,
+        TREASURE_TOKEN_ID: number,
+        treasureBoost: BigNumber,
+        unStakedTreasureAmount: number,
+        specificTreasureAmount_With_TreasureTokenId: number,
+        afterUnstakingTotalStakedTreasure: number
+      ) => {
+        await expect(unStakeTreasures(wallet, treasure, magicDepositor, TREASURE_TOKEN_ID, unStakedTreasureAmount))
+          .to.emit(atlasMine, 'Unstaked')
+          .withArgs(treasure.address, TREASURE_TOKEN_ID, unStakedTreasureAmount, treasureBoost)
+
+        expect(await atlasMine.treasureStaked(magicDepositor.address, TREASURE_TOKEN_ID)).to.be.equal(
+          specificTreasureAmount_With_TreasureTokenId
+        )
+
+        expect(await atlasMine.treasureStakedAmount(magicDepositor.address)).to.be.equal(
+          afterUnstakingTotalStakedTreasure
+        )
+      }
+
+      it('Staking Treasure', async () => {
+        const { alice, magicDepositor, treasure, atlasMine } = await TreasureFixture()
+        const TREASURE_TOKEN_ID = TREASURE_TOKEN_IDS[0]
+        const stakedTreasureAmount = ONE_TREAUSRE
+        const totalStaked = stakedTreasureAmount
+        const treasureBoost = await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID, ONE_TREAUSRE)
+        await checkStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID,
+          treasureBoost,
+          stakedTreasureAmount,
+          totalStaked
+        )
+      })
+
+      it('Staking 2 treasure', async () => {
+        const { alice, magicDepositor, treasure, atlasMine } = await TreasureFixture()
+        const TREASURE_TOKEN_ID_0 = TREASURE_TOKEN_IDS[0]
+        const stakedTreasureAmount = ONE_TREAUSRE
+        const totalStaked = stakedTreasureAmount
+        const treasureBoost = await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID_0, stakedTreasureAmount)
+        await checkStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID_0,
+          treasureBoost,
+          stakedTreasureAmount,
+          totalStaked
+        )
+        const contractBoost = await atlasMine.boosts(magicDepositor.address)
+        const TREASURE_TOKEN_ID_1 = TREASURE_TOKEN_IDS[1]
+        const treasureBoost1 = (
+          await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID_1, stakedTreasureAmount)
+        ).add(contractBoost)
+
+        const totalStaked1 = stakedTreasureAmount * 2
+        await checkStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID_1,
+          treasureBoost1,
+          stakedTreasureAmount,
+          totalStaked1
+        )
+      })
+
+      it('UnStaking Treasure', async () => {
+        const { alice, treasure, magicDepositor, atlasMine } = await TreasureFixture()
+        const TREASURE_TOKEN_ID = TREASURE_TOKEN_IDS[0]
+        const stakedTreasureAmount = ONE_TREAUSRE
+        const totalStaked = stakedTreasureAmount
+        const treasureBoost = await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID, ONE_TREAUSRE)
+        await checkStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID,
+          treasureBoost,
+          stakedTreasureAmount,
+          totalStaked
+        )
+
+        const unStakedTreasureAmount = ONE_TREAUSRE
+        const afterUnstakingTotalAmount = totalStaked - stakedTreasureAmount
+        const specificTreasureAmount_With_TreasureTokenId = stakedTreasureAmount - unStakedTreasureAmount
+        const contractBoost = await atlasMine.boosts(magicDepositor.address)
+        const treasureBoost1 = contractBoost.sub(
+          await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID, stakedTreasureAmount)
+        )
+        await checkUnStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID,
+          treasureBoost1,
+          unStakedTreasureAmount,
+          specificTreasureAmount_With_TreasureTokenId,
+          afterUnstakingTotalAmount
+        )
+      })
+
+      it('UnStaking 2 Treasureres', async () => {
+        const { alice, treasure, magicDepositor, atlasMine } = await TreasureFixture()
+        const TREASURE_TOKEN_ID = TREASURE_TOKEN_IDS[0]
+        const stakedTreasureAmount = ONE_TREAUSRE
+        const totalStaked = stakedTreasureAmount
+        const treasureBoost = await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID, stakedTreasureAmount)
+        await checkStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID,
+          treasureBoost,
+          stakedTreasureAmount,
+          totalStaked
+        )
+
+        const TREASURE_TOKEN_ID1 = TREASURE_TOKEN_IDS[1]
+        const stakedTreasureAmount1 = ONE_TREAUSRE
+        const totalStaked1 = totalStaked + stakedTreasureAmount1
+        const contractBoost = await atlasMine.boosts(magicDepositor.address)
+        const treasureBoost1 = contractBoost.add(
+          await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID1, stakedTreasureAmount1)
+        )
+        await checkStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID1,
+          treasureBoost1,
+          stakedTreasureAmount1,
+          totalStaked1
+        )
+
+        const unStakedTreasureAmount = ONE_TREAUSRE
+        const specificTreasureAmount_With_TreasureTokenId = totalStaked - unStakedTreasureAmount
+        const afterUnstakingTotalStakedAmount = totalStaked1 - unStakedTreasureAmount
+        const contractBoost1 = await atlasMine.boosts(magicDepositor.address)
+        const treasureBoost2 = contractBoost1.sub(
+          await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID, unStakedTreasureAmount)
+        )
+        await checkUnStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID,
+          treasureBoost2,
+          unStakedTreasureAmount,
+          specificTreasureAmount_With_TreasureTokenId,
+          afterUnstakingTotalStakedAmount
+        )
+
+        const unStakedTreasureAmount1 = ONE_TREAUSRE
+        const specificTreasureAmount_With_TreasureTokenId1 = totalStaked - unStakedTreasureAmount1
+        const afterUnstakingTotalStakedAmount1 = afterUnstakingTotalStakedAmount - unStakedTreasureAmount1
+        const contractBoost2 = await atlasMine.boosts(magicDepositor.address)
+        const treasureBoost3 = contractBoost2.sub(
+          await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID1, unStakedTreasureAmount1)
+        )
+        await checkUnStakedTreasure(
+          alice,
+          magicDepositor,
+          treasure,
+          atlasMine,
+          TREASURE_TOKEN_ID1,
+          treasureBoost3,
+          unStakedTreasureAmount1,
+          specificTreasureAmount_With_TreasureTokenId1,
+          afterUnstakingTotalStakedAmount1
+        )
+      })
+
+      it('Withdrawing Treasurer', async () => {
+        //Let only transfer nft to magic staking contract and then withdraw it
+        const { alice, treasure, magicDepositor, atlasMine } = await TreasureFixture()
+        const TREASURE_TOKEN_ID = TREASURE_TOKEN_IDS[0]
+        const amount = ONE_TREAUSRE
+        await treasure
+          .connect(alice)
+          .safeTransferFrom(alice.address, magicDepositor.address, TREASURE_TOKEN_ID, amount, '0x')
+
+        //Withdrawing Treasure Back
+
+        await magicDepositor.withdrawERC1155(treasure.address, alice.address, TREASURE_TOKEN_ID, amount)
+      })
+    })
+
+    describe('Legions Staking/Unstaking/Withdrawing', () => {
+      const checkStakedLegion = async (
+        alice: Wallet | SignerWithAddress,
+        magicDepositor: MagicDepositor,
+        legion: Legion,
+        atlasMine: AtlasMine,
+        LEGION_TOKEN_ID: number,
+        legionBoost: BigNumber,
+        afterStakingLegionAmount: number[]
+      ) => {
+        await expect(stakeLegion(alice, legion, magicDepositor, LEGION_TOKEN_ID, true))
+          .to.emit(atlasMine, 'Staked')
+          .withArgs(legion.address, LEGION_TOKEN_ID, 1, legionBoost)
+        const stakedLegions = (await atlasMine.getStakedLegions(magicDepositor.address)).map((value) =>
+          value.toNumber()
+        )
+        expect(stakedLegions).to.deep.equal(afterStakingLegionAmount)
+      }
+
+      const checkUnStakedLegion = async (
+        alice: Wallet | SignerWithAddress,
+        magicDepositor: MagicDepositor,
+        legion: Legion,
+        atlasMine: AtlasMine,
+        LEGION_TOKEN_ID: number,
+        legionBoost: BigNumber,
+        afterStakingLegionAmount: number[]
+      ) => {
+        await expect(unStakeLegion(alice, legion, magicDepositor, LEGION_TOKEN_ID))
+          .to.emit(atlasMine, 'Unstaked')
+          .withArgs(legion.address, LEGION_TOKEN_ID, 1, legionBoost)
+        const stakedLegions = (await atlasMine.getStakedLegions(magicDepositor.address)).map((value) =>
+          value.toNumber()
+        )
+        expect(stakedLegions).to.deep.equal(afterStakingLegionAmount)
+      }
+
+      it('Staking Legions', async () => {
+        const { alice, magicDepositor, legion, atlasMine } = await TreasureFixture()
+        const LEGION_TOKEN_ID_0 = LEGION_TOKEN_IDS[0]
+        const legionBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_0, ONE_LEGION)
+        const afterStakingLegionAmount: number[] = [LEGION_TOKEN_ID_0]
+
+        await checkStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_0,
+          legionBoost,
+          afterStakingLegionAmount
+        )
+      })
+
+      it('Staking 2  Legion', async () => {
+        const { alice, magicDepositor, legion, atlasMine } = await TreasureFixture()
+        const LEGION_TOKEN_ID_0 = LEGION_TOKEN_IDS[0]
+        const legionBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_0, ONE_LEGION)
+        const afterStakingLegionAmount: number[] = [LEGION_TOKEN_ID_0]
+
+        await checkStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_0,
+          legionBoost,
+          afterStakingLegionAmount
+        )
+
+        const contractBoost = await atlasMine.boosts(magicDepositor.address)
+        const LEGION_TOKEN_ID_1 = LEGION_TOKEN_IDS[1]
+        const legionBoost1 = (await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_1, ONE_LEGION)).add(
+          contractBoost
+        )
+        const afterStakingLegionAmount1: number[] = [LEGION_TOKEN_ID_0, LEGION_TOKEN_ID_1]
+
+        await checkStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_1,
+          legionBoost1,
+          afterStakingLegionAmount1
+        )
+      })
+
+      it('UnStaking Legion', async () => {
+        const { alice, magicDepositor, legion, atlasMine } = await TreasureFixture()
+        const LEGION_TOKEN_ID_0 = LEGION_TOKEN_IDS[0]
+        const legionBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_0, ONE_LEGION)
+        const afterStakingLegionAmount: number[] = [LEGION_TOKEN_ID_0]
+
+        await checkStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_0,
+          legionBoost,
+          afterStakingLegionAmount
+        )
+
+        const afterUnstakingTotalAmount: number[] = []
+        const contractBoost = await atlasMine.boosts(magicDepositor.address)
+        const legionBoost1 = contractBoost.sub(
+          await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_0, 0) //no use of passing amount here
+        )
+        await checkUnStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_0,
+          legionBoost1,
+          afterUnstakingTotalAmount
+        )
+      })
+
+      it('UnStaking 2  Legion', async () => {
+        const { alice, magicDepositor, legion, atlasMine } = await TreasureFixture()
+        const LEGION_TOKEN_ID_0 = LEGION_TOKEN_IDS[0]
+        const legionBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_0, ONE_LEGION)
+        const afterStakingLegionAmount: number[] = [LEGION_TOKEN_ID_0]
+
+        await checkStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_0,
+          legionBoost,
+          afterStakingLegionAmount
+        )
+
+        const LEGION_TOKEN_ID_1 = LEGION_TOKEN_IDS[1]
+        const contractBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_1, 0) //no use of passing amount here
+        const legionBoost1 = (await atlasMine.boosts(magicDepositor.address)).add(contractBoost)
+        const afterStakingLegionAmount1: number[] = [LEGION_TOKEN_ID_0, LEGION_TOKEN_ID_1]
+
+        await checkStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_1,
+          legionBoost1,
+          afterStakingLegionAmount1
+        )
+
+        const afterUnstakingTotalAmount: number[] = [LEGION_TOKEN_ID_1]
+        const contractBoost1 = await atlasMine.boosts(magicDepositor.address)
+        const legionBoost2 = contractBoost1.sub(
+          await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_0, 0) //no use of passing amount here, so put 0
+        )
+        await checkUnStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_0,
+          legionBoost2,
+          afterUnstakingTotalAmount
+        )
+
+        const afterUnstakingTotalAmount1: number[] = []
+        const contractBoost2 = await atlasMine.boosts(magicDepositor.address)
+        const legionBoost3 = contractBoost2.sub(
+          await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_1, 0) //no use of passing amount here
+        )
+        await checkUnStakedLegion(
+          alice,
+          magicDepositor,
+          legion,
+          atlasMine,
+          LEGION_TOKEN_ID_1,
+          legionBoost3,
+          afterUnstakingTotalAmount1
+        )
+      })
+
+      it('Withdrawing Legion', async () => {
+        //Let only transfer nft to magic staking contract and then withdraw it
+        const { alice, legion, magicDepositor, atlasMine } = await TreasureFixture()
+        const LEGION_TOKEN_ID = LEGION_TOKEN_IDS[0]
+
+        await legion.connect(alice).transferFrom(alice.address, magicDepositor.address, LEGION_TOKEN_ID)
+
+        //Withdrawing Legion Back
+
+        await magicDepositor.withdrawERC721(legion.address, alice.address, LEGION_TOKEN_ID)
+      })
     })
   })
 })

@@ -1,6 +1,7 @@
 import { deployments } from 'hardhat'
-import { AtlasMine__factory, IERC1155__factory, IERC20__factory, IERC721__factory, MagicDepositor__factory, MagicStaking__factory, PrMagicToken__factory, RewardPool__factory } from '../../../typechain'
-import { LEGION_NFT_ADDRESS, TREASURE_NFT_ADDRESS } from '../../../utils/constants'
+import { AtlasMine__factory, IERC1155__factory, IERC20__factory, IERC721__factory, MagicDepositor__factory, MagicStaking__factory, PrMagicToken__factory, RewardPool__factory } from '../../typechain'
+import { LEGION_NFT_ADDRESS, TREASURE_NFT_ADDRESS } from '../../utils/constants'
+
 export const BaseFixture = deployments.createFixture(async ({ deployments, ethers }) => {
   const {
     AtlasMine: { address: AtlasMineAddress },

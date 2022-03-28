@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { BaseFixture } from './fixtures/BaseFixture'
 import { deployments, ethers, timeAndMine, tracer } from 'hardhat'
-import { keccak256, parseEther } from 'ethers/lib/utils'
 import { BigNumber } from 'ethers'
 import {
   ATLAS_MASTER_OF_COIN_ADDRESS,
@@ -12,16 +11,19 @@ import {
   ONE_MONTH_IN_SECONDS,
   PRECISION,
   ONE_THOUSAND_MAGIC_BN,
-} from '../../utils/constants'
-import { AtlasMine__factory } from '../../typechain'
-import { depositMagicInGuild } from '../../utils/DepositMagicInGuild'
-import { awaitTx } from '../../utils/AwaitTx'
+  ONE_LEGION,
+  ONE_TREAUSRE,
+  TREASURE_TOKEN_IDS,
+  LEGION_TOKEN_IDS,
+} from '../utils/constants'
+import { awaitTx } from '../utils/AwaitTx'
+import { depositMagicInGuild } from '../utils/DepositMagicInGuild'
 
 const { AddressZero } = ethers.constants
 
 describe('MagicDepositor', () => {
   function checkAtlasDepositHasBeenInitialized(atlasDeposit: any) {
-    expect(atlasDeposit.activationTimestamp).to.be.gt(0)
+    expect(atlasDeposit.activationTimestamp).to.be.gt(0) 
     expect(atlasDeposit.accumulatedMagic).to.be.gt(0)
     expect(atlasDeposit.mintedShares).to.be.equal(0)
     expect(atlasDeposit.exists).to.be.equal(true)
@@ -153,30 +155,42 @@ describe('MagicDepositor', () => {
       })
 
       it('correctly harvests magic from atlas mine', async () => {
-        const { alice, magicToken, magicDepositor } = await fixture()
+        const { alice, magicToken, magicDepositor ,rewardPool} = await fixture()
         await magicDepositor.connect(alice).deposit(depositAmount) // Deposit 1 is activated, Deposit 2 is init'ed
 
         await timeAndMine.increaseTime(ONE_DAY_IN_SECONDS)
 
-        const [magicBalancePre, internalMagicAccountingPre] = await Promise.all([
+        const [magicBalancePre, internalMagicAccountingPre,magicBalanceOfRewardPoolPre,aliceMagicBalancePre] = await Promise.all([
           magicToken.balanceOf(magicDepositor.address),
           magicDepositor.heldMagic(),
+          magicToken.balanceOf(rewardPool.address),
+          magicToken.balanceOf(alice.address)    
         ])
 
         await magicDepositor.connect(alice).deposit(depositAmount)
 
-        const [magicBalancePost, internalMagicAccountingPost, compoundedMagic] = await Promise.all([
+        const [magicBalancePost, internalMagicAccountingPost, compoundedMagic,magicBalanceOfRewardPoolPost ,aliceMagicBalancePost]= await Promise.all([
           magicToken.balanceOf(magicDepositor.address),
           magicDepositor.heldMagic(),
           magicDepositor.harvestForNextDeposit(),
+          magicToken.balanceOf(rewardPool.address),
+          magicToken.balanceOf(alice.address) 
         ])
 
-        expect(magicBalancePost.sub(depositAmount)).to.be.gte(magicBalancePre)
-        // Its (harvestForNextDeposit) zero now because 50% for stakeRewards and 50% for treasury
-        // expect(internalMagicAccountingPost).to.be.gte(internalMagicAccountingPre)
+        expect(magicBalanceOfRewardPoolPost).to.gte(magicBalanceOfRewardPoolPre)
+        expect(aliceMagicBalancePost.add(depositAmount)).to.gte(magicBalanceOfRewardPoolPre)
+
+        // Because sometime harvestAmount will be as = 777073004001825
+        // then stakeRewardIncrement treasuryIncrement   stakeRewardSplit treasurySplit
+        //       388536502000912      388536502000912  500000000000000000 500000000000000000
+        // so stakeRewardIncrement is 388536502000912 instead of 388536502000912.5
+        //same with treasuryIncrement , then after we will subtract it we will get 1 as heldMagicIncrement
+        expect(magicBalancePost).to.gte((magicBalancePre.add(depositAmount)))
+        // Its (heldMagicIncrement) zero now because 50% for stakeRewards and 50% for treasury
+        expect(internalMagicAccountingPost).to.be.gte(internalMagicAccountingPre)
 
         const expectedCompoundedMagic = magicBalancePost.sub(magicBalancePre).sub(depositAmount)
-        expect(expectedCompoundedMagic).to.gte(0)
+        expect(expectedCompoundedMagic).to.gte(compoundedMagic)
       })
     })
 
@@ -235,20 +249,22 @@ describe('MagicDepositor', () => {
 
       it('greatly increases harvest rate after second deposit is activated', async () => {
         const { alice, magicToken, magicDepositor } = await fixture()
-
         await magicDepositor.update()
-        const harvestRatePre = (await magicDepositor.harvestForNextDeposit()).mul(PRECISION).div(ONE_MONTH_IN_SECONDS)
-        expect(harvestRatePre).to.be.gte(0)
 
+        const harvestRatePre = (await magicDepositor.harvestForNextDeposit()).mul(PRECISION).div(ONE_MONTH_IN_SECONDS)
+        
+        expect(harvestRatePre).to.be.gte(0)
         await depositMagicInGuild(alice, magicToken, magicDepositor, ONE_MAGIC_BN, true)
 
+        //After activation harvestForNextDeposit will be 0
         expect(await magicDepositor.harvestForNextDeposit()).to.be.equal(0)
         await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1)
 
         await magicDepositor.update()
+         
         const harvestRatePost = (await magicDepositor.harvestForNextDeposit()).mul(PRECISION).div(ONE_MONTH_IN_SECONDS)
 
-        // expect(harvestRatePost).to.gt(0)
+        expect(harvestRatePost).to.be.gte(0) 
       })
     })
 
@@ -269,9 +285,6 @@ describe('MagicDepositor', () => {
           await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
           await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1)
         }
-
-        // await magicDepositor.withdrawStakeRewards()
-        // await magicDepositor.withdrawTreasury()
 
         return { ...baseFixture }
       })
@@ -315,9 +328,6 @@ describe('MagicDepositor', () => {
           await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1)
         }
 
-        // await magicDepositor.withdrawStakeRewards()
-        // await magicDepositor.withdrawTreasury()
-
         return { ...baseFixture }
       })
 
@@ -339,6 +349,65 @@ describe('MagicDepositor', () => {
         checkAtlasDepositHasBeenActivated(secondAtlasDeposit)
         checkAtlasDepositHasBeenInitialized(thirdAtlasDeposit)
       })
+    })
+  })
+
+  describe('NFT staking', () => {
+    const depositAmount = ONE_THOUSAND_MAGIC_BN
+
+    const fixture = deployments.createFixture(async () => {
+      const baseFixture = await BaseFixture()
+      const { alice, bob, carol, magicToken, magicDepositor } = baseFixture
+
+      for (let i = 0; i < 3; i++) {
+        await Promise.all([
+          depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
+          depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
+          depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount),
+        ])
+        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1)
+      }
+
+      await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true)
+      return { ...baseFixture }
+    })
+
+    it('Staking Treasure', async () => {
+      const { alice, magicDepositor, treasure, atlasMine } = await fixture()
+      const TREASURE_TOKEN_ID = TREASURE_TOKEN_IDS[0]
+      const treasureBoost = await atlasMine.getNftBoost(treasure.address, TREASURE_TOKEN_ID, ONE_TREAUSRE)
+      const prePendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+
+      await treasure
+        .connect(alice)
+        .safeTransferFrom(alice.address, magicDepositor.address, TREASURE_TOKEN_ID, ONE_TREAUSRE, [])
+      await magicDepositor.stakeTreasure(TREASURE_TOKEN_ID, ONE_TREAUSRE)
+
+      // increase the boots
+      const magicDepositorBoost = await atlasMine.getUserBoost(magicDepositor.address)
+      expect(magicDepositorBoost).to.equal(treasureBoost)
+      // increase pendingReward
+      const postPendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+      expect(postPendingRewards).to.gt(prePendingRewards)
+    })
+
+    it('Staking Legion', async () => {
+      const { alice, magicDepositor, legion, atlasMine } = await fixture()
+      const LEGION_TOKEN_ID = LEGION_TOKEN_IDS[0]
+      const legionBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID, ONE_LEGION)
+      const prePendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+
+      await legion
+        .connect(alice)
+        ['safeTransferFrom(address,address,uint256)'](alice.address, magicDepositor.address, LEGION_TOKEN_ID)
+      await magicDepositor.stakeLegion(LEGION_TOKEN_ID)
+
+      // increase the boots
+      const magicDepositorBoost = await atlasMine.getUserBoost(magicDepositor.address)
+      expect(magicDepositorBoost).to.equal(legionBoost)
+      // increase pendingReward
+      const postPendingRewards = await atlasMine.pendingRewardsAll(magicDepositor.address)
+      expect(postPendingRewards).to.gt(prePendingRewards)
     })
   })
 

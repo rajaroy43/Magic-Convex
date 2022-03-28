@@ -9,9 +9,9 @@ import {
   ONE_TREAUSRE,
   TREASURE_TOKEN_IDS,
   LEGION_TOKEN_IDS,
-} from '../../utils/constants'
-import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../../utils/MagicNftStaking'
-import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../../typechain'
+} from '../utils/constants'
+import { stakeLegion, stakeTreasures, unStakeLegion, unStakeTreasures } from '../utils/MagicNftStaking'
+import { AtlasMine, IERC1155, IERC721, MagicStaking } from '../typechain'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
 describe('MagicStaking', () => {
@@ -52,7 +52,7 @@ describe('MagicStaking', () => {
       TREASURE_TOKEN_ID: number,
       treasureBoost: BigNumber,
       unStakedTreasureAmount: number,
-      specificTreasureAmount_With_TreasureTokenId :number,
+      specificTreasureAmount_With_TreasureTokenId: number,
       afterUnstakingTotalStakedTreasure: number
     ) => {
       await expect(unStakeTreasures(wallet, treasure, magicStaking, TREASURE_TOKEN_ID, unStakedTreasureAmount))
@@ -379,7 +379,7 @@ describe('MagicStaking', () => {
 
       const LEGION_TOKEN_ID_1 = LEGION_TOKEN_IDS[1]
       const contractBoost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_ID_1, 0) //no use of passing amount here
-      const legionBoost1 =  (await atlasMine.boosts(magicStaking.address)).add(contractBoost)
+      const legionBoost1 = (await atlasMine.boosts(magicStaking.address)).add(contractBoost)
       const afterStakingLegionAmount1: number[] = [LEGION_TOKEN_ID_0, LEGION_TOKEN_ID_1]
 
       await checkStakedLegion(

@@ -1,6 +1,6 @@
 import { deployments } from 'hardhat'
-import { AtlasMine, MasterOfCoin, Magic, PrMagicToken, XmgMagicToken, MagicDepositor, IERC20, RewardPool } from '../../../typechain'
-import { TEN_MILLION_MAGIC_BN, ONE_YEAR_IN_SECONDS, MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG } from '../../../utils/constants'
+import { AtlasMine, MasterOfCoin, Magic, PrMagicToken, XmgMagicToken, MagicDepositor,Legion,Treasure, RewardPool } from '../../typechain'
+import { TEN_MILLION_MAGIC_BN, ONE_YEAR_IN_SECONDS, MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG, LEGION_TOKEN_IDS, ONE_TREAUSRE, TREASURE_TOKEN_IDS } from '../../utils/constants'
 import { parseEther } from 'ethers/lib/utils'
 
 export const TreasureFixture = deployments.createFixture(async ({ ethers, getNamedAccounts }) => {
@@ -12,6 +12,12 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
   // deploy and initialize TreasureDAO contracts
   const Magic = await ethers.getContractFactory('Magic')
   const magicToken = <Magic>await Magic.deploy()
+
+  const Treasure = await ethers.getContractFactory('Treasure')
+  const treasure = <Treasure>await Treasure.deploy()
+
+  const Legion = await ethers.getContractFactory('Legion')
+  const legion = <Legion>await Legion.deploy()
 
   const AtlasMine = await ethers.getContractFactory('AtlasMine')
   const atlasMine = <AtlasMine>await AtlasMine.deploy()
@@ -33,6 +39,19 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     await magicToken.connect(user).mint(TEN_MILLION_MAGIC_BN)
   }
 
+  // mint nfts
+  for (let i = 0; i < LEGION_TOKEN_IDS.length; i++) {
+    await legion.mint(alice.address, LEGION_TOKEN_IDS[i])
+  }
+
+  for (let i = 0; i < TREASURE_TOKEN_IDS.length; i++) {
+    await treasure.mint(alice.address, TREASURE_TOKEN_IDS[i], ONE_TREAUSRE)
+  }
+
+  // set nft address to atlasMine
+  await atlasMine.setLegion(legion.address)
+  await atlasMine.setTreasure(treasure.address)
+
   // add stream
   let { timestamp } = await ethers.provider.getBlock('latest')
 
@@ -53,11 +72,17 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
 
   const MagicDepositor = await ethers.getContractFactory('MagicDepositor')
   const magicDepositor = <MagicDepositor>(
-    await MagicDepositor.deploy(magicToken.address, prMagicToken.address, atlasMine.address)
+    await MagicDepositor.deploy(
+      magicToken.address,
+      prMagicToken.address,
+      atlasMine.address,
+      treasure.address,
+      legion.address
+    )
   )
 
   const RewardPool = await ethers.getContractFactory('RewardPool')
-  const rewardPool = <RewardPool>await RewardPool.deploy(prMagicToken.address,magicToken.address,magicDepositor.address,magicDepositor.address)
+  const rewardPool = <RewardPool>await RewardPool.deploy(prMagicToken.address,magicToken.address,magicDepositor.address)
 
 
   await magicDepositor.setConfig(
@@ -87,6 +112,8 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     treasurySplit,
     treasuryAddress,
     stakingAddress,
-    rewardPool
+    rewardPool,
+    treasure,
+    legion
   }
 })

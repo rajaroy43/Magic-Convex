@@ -8,7 +8,7 @@ import {
   LEGION_NFT_ADDRESS,
   TREASURE_NFT_ADDRESS,
 } from '../../utils/constants'
-import { AtlasMine__factory, IMasterOfCoin__factory ,IERC1155__factory,IERC721__factory } from '../../typechain'
+import { AtlasMine__factory, IMasterOfCoin__factory, IERC1155__factory, IERC721__factory } from '../../typechain'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { abi: atlasMineAbi } = AtlasMine__factory

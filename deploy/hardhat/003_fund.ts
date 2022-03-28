@@ -32,22 +32,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const balance = await token.balanceOf(RICH_USER_ADDRESS)
     await token.connect(signer).transfer(alice.address, balance)
 
-    await Promise.all(LEGION_TOKEN_IDS.map(async(id)=>{
-      const owner = await legion.ownerOf(id)
-      await impersonate(owner, alice, hre)
-      const signer = hre.ethers.provider.getSigner(owner)
-      await legion.connect(signer).transferFrom(owner,alice.address,id)
-    }))
+    await Promise.all(
+      LEGION_TOKEN_IDS.map(async (id) => {
+        const owner = await legion.ownerOf(id)
+        await impersonate(owner, alice, hre)
+        const signer = hre.ethers.provider.getSigner(owner)
+        await legion.connect(signer).transferFrom(owner, alice.address, id)
+      })
+    )
 
-    const treasureTokenAmounts = await Promise.all(TREASURE_TOKEN_IDS.map(async(id)=>{
-      return await treasure.balanceOf(RICH_USER_ADDRESS,id)
-    }))
+    const treasureTokenAmounts = await Promise.all(
+      TREASURE_TOKEN_IDS.map(async (id) => {
+        return await treasure.balanceOf(RICH_USER_ADDRESS, id)
+      })
+    )
 
-
-    const batchTransferArgs = [RICH_USER_ADDRESS,alice.address,TREASURE_TOKEN_IDS,treasureTokenAmounts,"0x"]
+    const batchTransferArgs = [RICH_USER_ADDRESS, alice.address, TREASURE_TOKEN_IDS, treasureTokenAmounts, '0x']
     // @ts-ignore
     await treasure.connect(signer).safeBatchTransferFrom(...batchTransferArgs)
-    
   }
 
   /** Hack to work around precision issues in AtlasMine */

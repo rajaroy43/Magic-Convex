@@ -14,7 +14,6 @@ contract RewardPool{
     uint256 public constant duration = 7 days;
 
     address public immutable operator;
-    address public immutable magicDeposits;
 
     uint256 public periodFinish;
     uint256 public rewardRate;
@@ -37,13 +36,11 @@ contract RewardPool{
     constructor( 
         address _stakingToken,
         address _rewardToken,
-        address _magicDeposits,
         address _operator
     )  {
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
         operator = _operator;
-        magicDeposits = _magicDeposits;
     }
 
     function totalSupply() public view returns (uint256) {

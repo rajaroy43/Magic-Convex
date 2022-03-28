@@ -3,6 +3,8 @@ import { DeployFunction } from 'hardhat-deploy/types'
 import {
   MAGIC_TOKEN_ADDRESS,
   ATLAS_MINE_ADDRESS,
+  TREASURE_NFT_ADDRESS,
+  LEGION_NFT_ADDRESS,
   PR_MAGIC_TOKEN_CONTRACT_NAME,
   MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG,
   REWARD_POOL_CONTRACT_NAME,
@@ -18,9 +20,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts()
 
   const prMagicToken = (await getContract(PR_MAGIC_TOKEN_CONTRACT_NAME)) as PrMagicToken
-  const args = [MAGIC_TOKEN_ADDRESS, prMagicToken.address, ATLAS_MINE_ADDRESS]
+  
   const { address: magicDepositorAddress } = await deploy('MagicDepositor', {
-    args : args,
+    args: [MAGIC_TOKEN_ADDRESS, prMagicToken.address, ATLAS_MINE_ADDRESS, TREASURE_NFT_ADDRESS, LEGION_NFT_ADDRESS],
     from: deployer,
   })
 
