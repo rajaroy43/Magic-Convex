@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MagicDepositorConfig is Ownable {
-    event UpdatedConfiguration(uint256 stakeRewardSplit, uint256 treasurySplit, address treasury, address staking);
+    event UpdatedConfiguration(
+        uint256 stakeRewardSplit,
+        uint256 treasurySplit,
+        address treasury,
+        address staking
+    );
 
     /** Config variables */
     uint128 internal stakeRewardSplit; // Proportion of harvest that is going to stake rewards
@@ -20,9 +25,9 @@ contract MagicDepositorConfig is Ownable {
         address _treasury,
         address _staking
     ) external onlyOwner {
-        require(_stakeRewardSplit + _treasurySplit <= 1 ether, 'Invalid split config');
-        require(_treasury != address(0), 'Invalid treasury addr');
-        require(_staking != address(0), 'Invalid staking addr');
+        require(_stakeRewardSplit + _treasurySplit <= 1 ether, "Invalid split config");
+        require(_treasury != address(0), "Invalid treasury addr");
+        require(_staking != address(0), "Invalid staking addr");
 
         stakeRewardSplit = _stakeRewardSplit;
         treasurySplit = _treasurySplit;

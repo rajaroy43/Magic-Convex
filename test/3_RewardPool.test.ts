@@ -199,12 +199,14 @@ describe("Reward Pool", () => {
         it("Geting reward  from reward pool by users without donating by anyone", async () => {
           const { alice, rewardPool, magicToken } = await fixtureAfterStaking();
           const magicBalancePre = await magicToken.balanceOf(alice.address);
-          const rewardEvents = await (await (await rewardPool.connect(alice).getReward(alice.address)).wait()).events
+          const rewardEvents = await (
+            await (await rewardPool.connect(alice).getReward(alice.address)).wait()
+          ).events;
           // @ts-ignore
-          const rewardEarned = rewardEvents[rewardEvents.length-1].args['reward']
+          const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
           const magicBalancePost = await magicToken.balanceOf(alice.address);
           expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
-          // get reward as 0.0000000000000something  amount 
+          // get reward as 0.0000000000000something  amount
           await expect(await rewardPool.connect(alice).getReward(alice.address)).to.emit(
             rewardPool,
             "RewardPaid"
@@ -214,7 +216,8 @@ describe("Reward Pool", () => {
         });
 
         it("Geting reward  from reward pool  by users with donating ", async () => {
-          const { alice,carol, bob, rewardPool, magicToken ,magicDepositor} = await fixtureAfterStaking();
+          const { alice, carol, bob, rewardPool, magicToken, magicDepositor } =
+            await fixtureAfterStaking();
           const bobMagicBal = await magicToken.balanceOf(bob.address);
           const rewardPoolMagicBalPre = await magicToken.balanceOf(rewardPool.address);
           await magicToken.connect(bob).approve(rewardPool.address, bobMagicBal);
@@ -225,14 +228,17 @@ describe("Reward Pool", () => {
           expect(rewardPoolMagicBalPost).to.equal(rewardPoolMagicBalPre.add(bobMagicBal));
 
           // earmarking reward from magicDepositor
-          
+
           await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
-          await expect(depositMagicInGuild(carol, magicToken, magicDepositor, ONE_MAGIC_BN))
-          .to.emit(rewardPool,"RewardAdded")
+          await expect(
+            depositMagicInGuild(carol, magicToken, magicDepositor, ONE_MAGIC_BN)
+          ).to.emit(rewardPool, "RewardAdded");
           const magicBalancePre = await magicToken.balanceOf(alice.address);
-          const rewardEvents = await (await (await rewardPool.connect(alice).getReward(alice.address)).wait()).events
+          const rewardEvents = await (
+            await (await rewardPool.connect(alice).getReward(alice.address)).wait()
+          ).events;
           // @ts-ignore
-          const rewardEarned = rewardEvents[rewardEvents.length-1].args['reward']
+          const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
           const magicBalancePost = await magicToken.balanceOf(alice.address);
           expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
         });

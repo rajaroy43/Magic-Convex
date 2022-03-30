@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import '@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol';
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 
-import './IMasterOfCoin.sol';
-import './ILegionMetadataStore.sol';
+import "./IMasterOfCoin.sol";
+import "./ILegionMetadataStore.sol";
 
 contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155HolderUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
@@ -40,7 +40,7 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         Lock lock;
     }
 
-    bytes32 public constant ATLAS_MINE_ADMIN_ROLE = keccak256('ATLAS_MINE_ADMIN_ROLE');
+    bytes32 public constant ATLAS_MINE_ADMIN_ROLE = keccak256("ATLAS_MINE_ADMIN_ROLE");
 
     uint256 public constant DAY = 1 days;
     uint256 public constant ONE_WEEK = 7 days;
@@ -114,7 +114,12 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
             totalRewardsEarned += distributedRewards;
             totalUndistributedRewards += undistributedRewards;
             accMagicPerShare += (distributedRewards * ONE) / lpSupply;
-            emit LogUpdateRewards(distributedRewards, undistributedRewards, lpSupply, accMagicPerShare);
+            emit LogUpdateRewards(
+                distributedRewards,
+                undistributedRewards,
+                lpSupply,
+                accMagicPerShare
+            );
         }
 
         uint256 util = utilization();
@@ -133,7 +138,14 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         legionBoostMatrix = [
             // GENESIS
             // LEGENDARY,RARE,SPECIAL,UNCOMMON,COMMON,RECRUIT
-            [uint256(600e16), uint256(200e16), uint256(75e16), uint256(100e16), uint256(50e16), uint256(0)],
+            [
+                uint256(600e16),
+                uint256(200e16),
+                uint256(75e16),
+                uint256(100e16),
+                uint256(50e16),
+                uint256(0)
+            ],
             // AUXILIARY
             // LEGENDARY,RARE,SPECIAL,UNCOMMON,COMMON,RECRUIT
             [uint256(0), uint256(25e16), uint256(0), uint256(10e16), uint256(5e16), uint256(0)],
@@ -168,9 +180,15 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         return legionBoostMatrix;
     }
 
-    function getLegionBoost(uint256 _legionGeneration, uint256 _legionRarity) public view virtual returns (uint256) {
+    function getLegionBoost(uint256 _legionGeneration, uint256 _legionRarity)
+        public
+        view
+        virtual
+        returns (uint256)
+    {
         if (
-            _legionGeneration < legionBoostMatrix.length && _legionRarity < legionBoostMatrix[_legionGeneration].length
+            _legionGeneration < legionBoostMatrix.length &&
+            _legionRarity < legionBoostMatrix[_legionGeneration].length
         ) {
             return legionBoostMatrix[_legionGeneration][_legionRarity];
         }
@@ -231,7 +249,12 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         return excludedAddresses.values();
     }
 
-    function getLockBoost(Lock _lock) public pure virtual returns (uint256 boost, uint256 timelock) {
+    function getLockBoost(Lock _lock)
+        public
+        pure
+        virtual
+        returns (uint256 boost, uint256 timelock)
+    {
         if (_lock == Lock.twoWeeks) {
             // 10%
             return (10e16, TWO_WEEKS);
@@ -248,7 +271,7 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
             // 400%
             return (400e16, TWELVE_MONTHS);
         } else {
-            revert('Invalid lock value');
+            revert("Invalid lock value");
         }
     }
 
@@ -266,7 +289,12 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         }
     }
 
-    function calcualteVestedPrincipal(address _user, uint256 _depositId) public view virtual returns (uint256 amount) {
+    function calcualteVestedPrincipal(address _user, uint256 _depositId)
+        public
+        view
+        virtual
+        returns (uint256 amount)
+    {
         UserInfo storage user = userInfo[_user][_depositId];
         Lock _lock = user.lock;
 
@@ -282,15 +310,23 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         }
     }
 
-    function pendingRewardsPosition(address _user, uint256 _depositId) public view virtual returns (uint256 pending) {
+    function pendingRewardsPosition(address _user, uint256 _depositId)
+        public
+        view
+        virtual
+        returns (uint256 pending)
+    {
         UserInfo storage user = userInfo[_user][_depositId];
         uint256 _accMagicPerShare = accMagicPerShare;
         uint256 lpSupply = totalLpToken;
 
-        (uint256 distributedRewards, ) = getRealMagicReward(masterOfCoin.getPendingRewards(address(this)));
+        (uint256 distributedRewards, ) = getRealMagicReward(
+            masterOfCoin.getPendingRewards(address(this))
+        );
         _accMagicPerShare += (distributedRewards * ONE) / lpSupply;
 
-        pending = (((user.lpAmount * _accMagicPerShare) / ONE).toInt256() - user.rewardDebt).toUint256();
+        pending = (((user.lpAmount * _accMagicPerShare) / ONE).toInt256() - user.rewardDebt)
+            .toUint256();
     }
 
     function pendingRewardsAll(address _user) external view virtual returns (uint256 pending) {
@@ -322,7 +358,12 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         emit Deposit(msg.sender, depositId, _amount, _lock);
     }
 
-    function withdrawPosition(uint256 _depositId, uint256 _amount) public virtual updateRewards returns (bool) {
+    function withdrawPosition(uint256 _depositId, uint256 _amount)
+        public
+        virtual
+        updateRewards
+        returns (bool)
+    {
         UserInfo storage user = userInfo[msg.sender][_depositId];
         uint256 depositAmount = user.depositAmount;
         if (depositAmount == 0) return false;
@@ -332,7 +373,7 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         }
         // anyone can withdraw if kill swith was used
         if (!unlockAll) {
-            require(block.timestamp >= user.lockedUntil, 'Position is still locked');
+            require(block.timestamp >= user.lockedUntil, "Position is still locked");
             uint256 vestedAmount = _vestedPrincipal(msg.sender, _depositId);
             if (_amount > vestedAmount) {
                 _amount = vestedAmount;
@@ -386,7 +427,7 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
 
         emit Harvest(msg.sender, _depositId, _pendingMagic);
 
-        require(magic.balanceOf(address(this)) >= magicTotalDeposits, 'Run on banks');
+        require(magic.balanceOf(address(this)) >= magicTotalDeposits, "Run on banks");
     }
 
     function harvestAll() public virtual {
@@ -409,28 +450,34 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
     }
 
     function stakeTreasure(uint256 _tokenId, uint256 _amount) external virtual updateRewards {
-        require(treasure != address(0), 'Cannot stake Treasure');
-        require(_amount > 0, 'Amount is 0');
+        require(treasure != address(0), "Cannot stake Treasure");
+        require(_amount > 0, "Amount is 0");
 
         treasureStaked[msg.sender][_tokenId] += _amount;
         treasureStakedAmount[msg.sender] += _amount;
 
-        require(treasureStakedAmount[msg.sender] <= 20, 'Max 20 treasures per wallet');
+        require(treasureStakedAmount[msg.sender] <= 20, "Max 20 treasures per wallet");
 
         uint256 boost = getNftBoost(treasure, _tokenId, _amount);
         boosts[msg.sender] += boost;
 
         _recalculateLpAmount(msg.sender);
 
-        IERC1155Upgradeable(treasure).safeTransferFrom(msg.sender, address(this), _tokenId, _amount, bytes(''));
+        IERC1155Upgradeable(treasure).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _tokenId,
+            _amount,
+            bytes("")
+        );
 
         emit Staked(treasure, _tokenId, _amount, boosts[msg.sender]);
     }
 
     function unstakeTreasure(uint256 _tokenId, uint256 _amount) external virtual updateRewards {
-        require(treasure != address(0), 'Cannot stake Treasure');
-        require(_amount > 0, 'Amount is 0');
-        require(treasureStaked[msg.sender][_tokenId] >= _amount, 'Withdraw amount too big');
+        require(treasure != address(0), "Cannot stake Treasure");
+        require(_amount > 0, "Amount is 0");
+        require(treasureStaked[msg.sender][_tokenId] >= _amount, "Withdraw amount too big");
 
         treasureStaked[msg.sender][_tokenId] -= _amount;
         treasureStakedAmount[msg.sender] -= _amount;
@@ -440,18 +487,24 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
 
         _recalculateLpAmount(msg.sender);
 
-        IERC1155Upgradeable(treasure).safeTransferFrom(address(this), msg.sender, _tokenId, _amount, bytes(''));
+        IERC1155Upgradeable(treasure).safeTransferFrom(
+            address(this),
+            msg.sender,
+            _tokenId,
+            _amount,
+            bytes("")
+        );
 
         emit Unstaked(treasure, _tokenId, _amount, boosts[msg.sender]);
     }
 
     function stakeLegion(uint256 _tokenId) external virtual updateRewards {
-        require(legion != address(0), 'Cannot stake Legion');
-        require(legionStaked[msg.sender].add(_tokenId), 'NFT already staked');
-        require(legionStaked[msg.sender].length() <= 3, 'Max 3 legions per wallet');
+        require(legion != address(0), "Cannot stake Legion");
+        require(legionStaked[msg.sender].add(_tokenId), "NFT already staked");
+        require(legionStaked[msg.sender].length() <= 3, "Max 3 legions per wallet");
 
         if (isLegion1_1(_tokenId)) {
-            require(!isLegion1_1Staked[msg.sender], 'Max 1 1/1 legion per wallet');
+            require(!isLegion1_1Staked[msg.sender], "Max 1 1/1 legion per wallet");
             isLegion1_1Staked[msg.sender] = true;
         }
 
@@ -466,7 +519,7 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
     }
 
     function unstakeLegion(uint256 _tokenId) external virtual updateRewards {
-        require(legionStaked[msg.sender].remove(_tokenId), 'NFT is not staked');
+        require(legionStaked[msg.sender].remove(_tokenId), "NFT is not staked");
 
         if (isLegion1_1(_tokenId)) {
             isLegion1_1Staked[msg.sender] = false;
@@ -561,12 +614,22 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         }
     }
 
-    function addExcludedAddress(address _exclude) external virtual onlyRole(ATLAS_MINE_ADMIN_ROLE) updateRewards {
-        require(excludedAddresses.add(_exclude), 'Address already excluded');
+    function addExcludedAddress(address _exclude)
+        external
+        virtual
+        onlyRole(ATLAS_MINE_ADMIN_ROLE)
+        updateRewards
+    {
+        require(excludedAddresses.add(_exclude), "Address already excluded");
     }
 
-    function removeExcludedAddress(address _excluded) external virtual onlyRole(ATLAS_MINE_ADMIN_ROLE) updateRewards {
-        require(excludedAddresses.remove(_excluded), 'Address is not excluded');
+    function removeExcludedAddress(address _excluded)
+        external
+        virtual
+        onlyRole(ATLAS_MINE_ADMIN_ROLE)
+        updateRewards
+    {
+        require(excludedAddresses.remove(_excluded), "Address is not excluded");
     }
 
     function setUtilizationOverride(uint256 _utilizationOverride)
@@ -590,7 +653,11 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         legion = _legion;
     }
 
-    function setLegionMetadataStore(address _legionMetadataStore) external virtual onlyRole(ATLAS_MINE_ADMIN_ROLE) {
+    function setLegionMetadataStore(address _legionMetadataStore)
+        external
+        virtual
+        onlyRole(ATLAS_MINE_ADMIN_ROLE)
+    {
         legionMetadataStore = _legionMetadataStore;
     }
 
@@ -607,7 +674,12 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         unlockAll = unlockAll ? false : true;
     }
 
-    function withdrawUndistributedRewards(address _to) external virtual onlyRole(ATLAS_MINE_ADMIN_ROLE) updateRewards {
+    function withdrawUndistributedRewards(address _to)
+        external
+        virtual
+        onlyRole(ATLAS_MINE_ADMIN_ROLE)
+        updateRewards
+    {
         uint256 _totalUndistributedRewards = totalUndistributedRewards;
         totalUndistributedRewards = 0;
 
@@ -615,7 +687,12 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         emit UndistributedRewardsWithdraw(_to, _totalUndistributedRewards);
     }
 
-    function getTreasureBoost(uint256 _tokenId, uint256 _amount) public pure virtual returns (uint256 boost) {
+    function getTreasureBoost(uint256 _tokenId, uint256 _amount)
+        public
+        pure
+        virtual
+        returns (uint256 boost)
+    {
         if (_tokenId == 39) {
             // Ancient Relic 8%
             boost = 75e15;
@@ -759,13 +836,21 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
         boost = boost * _amount;
     }
 
-    function _vestedPrincipal(address _user, uint256 _depositId) internal virtual returns (uint256 amount) {
+    function _vestedPrincipal(address _user, uint256 _depositId)
+        internal
+        virtual
+        returns (uint256 amount)
+    {
         amount = calcualteVestedPrincipal(_user, _depositId);
         UserInfo storage user = userInfo[_user][_depositId];
         user.vestingLastUpdate = block.timestamp;
     }
 
-    function _addDeposit(address _user) internal virtual returns (UserInfo storage user, uint256 newDepositId) {
+    function _addDeposit(address _user)
+        internal
+        virtual
+        returns (UserInfo storage user, uint256 newDepositId)
+    {
         // start depositId from 1
         newDepositId = ++currentId[_user];
         allUserDepositIds[_user].add(newDepositId);
@@ -773,6 +858,6 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
     }
 
     function _removeDeposit(address _user, uint256 _depositId) internal virtual {
-        require(allUserDepositIds[_user].remove(_depositId), 'depositId !exists');
+        require(allUserDepositIds[_user].remove(_depositId), "depositId !exists");
     }
 }
