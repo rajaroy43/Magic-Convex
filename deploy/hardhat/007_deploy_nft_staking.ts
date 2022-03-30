@@ -12,12 +12,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     getNamedAccounts,
   } = hre;
   const { deployer } = await getNamedAccounts();
-  const { address: magicStakingAddress } = await deploy("MagicStaking", {
+  const { address: magicNftStakingAddress } = await deploy("MagicNftStaking", {
     args: [ATLAS_MINE_ADDRESS, TREASURE_NFT_ADDRESS, LEGION_NFT_ADDRESS],
     from: deployer,
   });
-  hre.tracer.nameTags[magicStakingAddress] = "MagicStaking";
+  hre.tracer.nameTags[magicNftStakingAddress] = "MagicNftStaking";
 };
 
 export default func;
-func.tags = ["MagicStaking"];
+func.tags = ["MagicNftStaking"];

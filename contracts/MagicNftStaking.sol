@@ -8,16 +8,34 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MAGIC/IAtlasMine.sol";
 
-contract MagicStaking is Ownable {
-    address public treasure;
-    address public legion;
+/// @title MagicNftStaking
+/// @notice nft staking by magicDepositor for boosting rewards
 
-    IAtlasMine public atlasMine;
+contract MagicNftStaking is Ownable {
+    address public treasure; //treasure erc1155 nft in atlasmine
+    address public legion; //legion erc721 nft in atlasmine
+
+    IAtlasMine public atlasMine; //AtlasMine contract
 
     // EVENTS
+
+    /// @notice Event for withdrawing nft tokens
+    /// @param nft Address of nft token
+    /// @param to Address of user that receives nft token
+    /// @param tokenId nft token id
+    /// @param amount Amount of nft token
     event NftWithdrawn(address nft, address to, uint256 tokenId, uint256 amount);
+
+    /// @notice Event for setting atlasmine contract
+    /// @param atlasMine Address of atlasmine contract
     event AtlasMineChanged(address atlasMine);
+
+    /// @notice Event for setting treasure contract
+    /// @param treasure Address of treasure contract
     event TreasureChanged(address treasure);
+
+    /// @notice Event for setting legion contract
+    /// @param legion Address of legion contract
     event LegionChanged(address legion);
 
     constructor(
@@ -32,12 +50,18 @@ contract MagicStaking is Ownable {
         IERC721(legion).setApprovalForAll(_atlasMine, true);
     }
 
+    /// @notice setting atlasmine contract
+    /// @param _atlasMine atlasmine contract address
+
     function setAtlasMine(address _atlasMine) external onlyOwner {
         require(_atlasMine != address(0), "atlasmine zero address");
         require(address(atlasMine) != _atlasMine, "same atlasMine address");
         atlasMine = IAtlasMine(_atlasMine);
         emit AtlasMineChanged(address(atlasMine));
     }
+
+    /// @notice setting treasure contract
+    /// @param _treasure treasure contract address
 
     function setTreasure(address _treasure) external onlyOwner {
         require(_treasure != address(0), "treasure zero address");
@@ -46,6 +70,9 @@ contract MagicStaking is Ownable {
         emit TreasureChanged(treasure);
     }
 
+    /// @notice setting legion contract
+    /// @param _legion legion contract address
+
     function setLegion(address _legion) external onlyOwner {
         require(_legion != address(0), "legion zero address");
         require(legion != _legion, "same legion address");
@@ -53,24 +80,41 @@ contract MagicStaking is Ownable {
         emit LegionChanged(legion);
     }
 
+    /// @notice staking treasure nft in atlasmine for boosting rewards
+    /// @param tokenId treasure token id
+    /// @param amount amount of tokenId
+
     function stakeTreasure(uint256 tokenId, uint256 amount) external onlyOwner {
         atlasMine.stakeTreasure(tokenId, amount);
     }
+
+    /// @notice unstaking treasure nft in atlasmine
+    /// @param tokenId treasure token id
+    /// @param amount amount of tokenId
 
     function unStakeTreasure(uint256 tokenId, uint256 amount) external onlyOwner {
         atlasMine.unstakeTreasure(tokenId, amount);
     }
 
-    //Not tracking staked legion and treasure ,because we can get access it
-    //from atlasmine.legionStaked() and atlasmine.treasureStakedAmount()
+    /// @notice staking legion nft in atlasmine
+    /// @param tokenId legion nft token id
 
     function stakeLegion(uint256 tokenId) external onlyOwner {
         atlasMine.stakeLegion(tokenId);
     }
 
+    /// @notice unstaking legion nft from atlasmine
+    /// @param tokenId legion nft token id
+
     function unStakeLegion(uint256 tokenId) external onlyOwner {
         atlasMine.unstakeLegion(tokenId);
     }
+
+    /// @notice withdrawing any erc1155 nfts
+    /// @param nft nft token address
+    /// @param to transfering nft to `to` address
+    /// @param tokenId nft token id
+    /// @param amount amount of tokenId
 
     function withdrawERC1155(
         address nft,
@@ -82,6 +126,11 @@ contract MagicStaking is Ownable {
         IERC1155(nft).safeTransferFrom(address(this), to, tokenId, amount, bytes(""));
         emit NftWithdrawn(nft, to, tokenId, amount);
     }
+
+    /// @notice withdrawing any erc721 nft
+    /// @param nft nft token address
+    /// @param to transfering nft to `to` address
+    /// @param tokenId nft token id
 
     function withdrawERC721(
         address nft,

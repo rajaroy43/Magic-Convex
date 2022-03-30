@@ -5,7 +5,7 @@ import {
   IERC20__factory,
   IERC721__factory,
   MagicDepositor__factory,
-  MagicStaking__factory,
+  MagicNftStaking__factory,
   PrMagicToken__factory,
   RewardPool__factory,
 } from "../../typechain";
@@ -17,7 +17,7 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     MAGIC: { address: MagicTokenAddress },
     prMagicToken: { address: prMagicTokenAddress },
     MagicDepositor: { address: MagicDepositorAddress },
-    MagicStaking: { address: MagicStakingAddress },
+    MagicNftStaking: { address: MagicNftStakingAddress },
     RewardPool: { address: rewardPoolAddress },
   } = await deployments.fixture();
   const [alice, bob, carol, dave, mallory] = await ethers.getSigners();
@@ -27,7 +27,7 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
   const magicToken = IERC20__factory.connect(MagicTokenAddress, alice);
   const prMagicToken = PrMagicToken__factory.connect(prMagicTokenAddress, alice);
   const magicDepositor = MagicDepositor__factory.connect(MagicDepositorAddress, alice);
-  const magicStaking = MagicStaking__factory.connect(MagicStakingAddress, alice);
+  const magicNftStaking = MagicNftStaking__factory.connect(MagicNftStakingAddress, alice);
   const treasure = IERC1155__factory.connect(TREASURE_NFT_ADDRESS, alice);
   const legion = IERC721__factory.connect(LEGION_NFT_ADDRESS, alice);
   const rewardPool = RewardPool__factory.connect(rewardPoolAddress, alice);
@@ -58,7 +58,7 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     magicDepositor,
     stakeRewardSplit,
     treasurySplit,
-    magicStaking,
+    magicNftStaking,
     treasuryAddress,
     stakingAddress,
     treasure,

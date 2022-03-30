@@ -5,6 +5,8 @@ import "./libs/MathUtil.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/// @title RewardPool
+/// @notice stake prMagic token and receive magic token
 contract RewardPool {
     using SafeERC20 for IERC20;
 
@@ -64,6 +66,7 @@ contract RewardPool {
         return MathUtil.min(block.timestamp, periodFinish);
     }
 
+    /// @notice get reward per token till now
     function rewardPerToken() public view returns (uint256) {
         uint256 supply = totalSupply();
         if (supply == 0) {
@@ -75,15 +78,25 @@ contract RewardPool {
             supply;
     }
 
+    /// @notice getting how much amount of reward token  user have accumulated
+    /// @param account for address account
+
     function earned(address account) public view returns (uint256) {
         return
             ((balanceOf(account) * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18) +
             rewards[account];
     }
 
+    /// @notice staking amount of prMagic token for caller
+    /// @param _amount how much amount of prMagic user wan't to stake
+
     function stake(uint256 _amount) public {
         _stake(msg.sender, _amount);
     }
+
+    /// @notice staking amount of prMagic token for _for address
+    /// @param _for staking for address _for
+    /// @param _amount how much amount of prMagic user wan't to stake
 
     function stakeFor(address _for, uint256 _amount) public {
         _stake(_for, _amount);
@@ -102,6 +115,10 @@ contract RewardPool {
         emit Staked(msg.sender, _amount);
     }
 
+    /// @notice unstaking amount of prMagic token from contract
+    /// @param _amount how much amount of prMagic user wan't to unstake/withdraw
+    /// @param claim if claim true ,then after withdrawing user will get reward in same transaction
+
     function withdraw(uint256 _amount, bool claim) public updateReward(msg.sender) {
         require(_amount > 0, "RewardPool : Cannot withdraw 0");
 
@@ -115,6 +132,9 @@ contract RewardPool {
         }
     }
 
+    /// @notice getting rewrd for  address  _account
+    /// @param _account address of user
+
     function getReward(address _account) public updateReward(_account) {
         uint256 reward = earned(_account);
         if (reward > 0) {
@@ -124,10 +144,17 @@ contract RewardPool {
         }
     }
 
+    /// @notice donate _amount of magic token to this contract
+    /// @param _amount how much amount of token donation
+
     function donate(uint256 _amount) external {
         IERC20(rewardToken).safeTransferFrom(msg.sender, address(this), _amount);
         queuedRewards = queuedRewards + _amount;
     }
+
+    /// @notice updating new reward and reward rate ,if here time passes against periodFinish
+    /// @param _rewards how much amount of _rewards token operatow will add
+    // Here operator will be magicDepositor contract
 
     function queueNewRewards(uint256 _rewards) external {
         require(msg.sender == operator, "!authorized");
@@ -153,6 +180,7 @@ contract RewardPool {
         }
     }
 
+    /// @notice notifying how much amount of reward is recived
     function notifyRewardAmount(uint256 reward) internal updateReward(address(0)) {
         historicalRewards = historicalRewards + reward;
         if (block.timestamp >= periodFinish) {

@@ -8,11 +8,11 @@ import {IRewards, IMagicDepositor} from "./Interfaces.sol";
 import "./prMagicToken.sol";
 import {AtlasDeposit, AtlasDepositLibrary} from "./libs/AtlasDeposit.sol";
 import "./MagicDepositorConfig.sol";
-import "./MagicStaking.sol";
+import "./MagicNftStaking.sol";
 
 /// @title MagicDepositor
 /// @notice cvxCRV like perpetual staking contract of MAGIC tokens
-contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicStaking {
+contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicNftStaking {
     using SafeERC20 for IERC20;
     using SafeERC20 for prMagicToken;
     using AtlasDepositLibrary for AtlasDeposit;
@@ -73,7 +73,7 @@ contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicStaking {
         address _atlasMine,
         address _treasure,
         address _legion
-    ) MagicStaking(_atlasMine, _treasure, _legion) {
+    ) MagicNftStaking(_atlasMine, _treasure, _legion) {
         magic = IERC20(_magic);
         prMagic = prMagicToken(_prMagic);
     }
