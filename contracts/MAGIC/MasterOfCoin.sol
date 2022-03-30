@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import './IMasterOfCoin.sol';
-import './IStream.sol';
+import "./IMasterOfCoin.sol";
+import "./IStream.sol";
 
 contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    bytes32 public constant MASTER_OF_COIN_ADMIN_ROLE = keccak256('MASTER_OF_COIN_ADMIN_ROLE');
+    bytes32 public constant MASTER_OF_COIN_ADMIN_ROLE = keccak256("MASTER_OF_COIN_ADMIN_ROLE");
 
     IERC20Upgradeable public magic;
 
@@ -28,12 +28,12 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
     mapping(address => bool) public callbackRegistry;
 
     modifier streamExists(address _stream) {
-        require(streams.contains(_stream), 'Stream does not exist');
+        require(streams.contains(_stream), "Stream does not exist");
         _;
     }
 
     modifier streamActive(address _stream) {
-        require(streamConfig[_stream].endTimestamp > block.timestamp, 'Stream ended');
+        require(streamConfig[_stream].endTimestamp > block.timestamp, "Stream ended");
         _;
     }
 
@@ -43,7 +43,12 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         if (callbackRegistry[_stream]) IStream(_stream).postRateUpdate();
     }
 
-    event StreamAdded(address indexed stream, uint256 amount, uint256 startTimestamp, uint256 endTimestamp);
+    event StreamAdded(
+        address indexed stream,
+        uint256 amount,
+        uint256 startTimestamp,
+        uint256 endTimestamp
+    );
     event StreamTimeUpdated(address indexed stream, uint256 startTimestamp, uint256 endTimestamp);
 
     event StreamGrant(address indexed stream, address from, uint256 amount);
@@ -77,7 +82,7 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         stream.lastRewardTimestamp = block.timestamp;
 
         // this should never happen but better safe than sorry
-        require(stream.paid <= stream.totalRewards, 'Rewards overflow');
+        require(stream.paid <= stream.totalRewards, "Rewards overflow");
 
         magic.safeTransfer(msg.sender, rewardsPaid);
         emit RewardsPaid(msg.sender, rewardsPaid, stream.paid);
@@ -118,7 +123,12 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         }
     }
 
-    function getPendingRewards(address _stream) public view virtual returns (uint256 pendingRewards) {
+    function getPendingRewards(address _stream)
+        public
+        view
+        virtual
+        returns (uint256 pendingRewards)
+    {
         CoinStream storage stream = streamConfig[_stream];
 
         uint256 paid = stream.paid;
@@ -140,7 +150,11 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         }
     }
 
-    function _fundStream(address _stream, uint256 _amount) internal virtual callbackStream(_stream) {
+    function _fundStream(address _stream, uint256 _amount)
+        internal
+        virtual
+        callbackStream(_stream)
+    {
         CoinStream storage stream = streamConfig[_stream];
 
         uint256 secondsToEnd = stream.endTimestamp - stream.lastRewardTimestamp;
@@ -163,8 +177,8 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         uint256 _endTimestamp,
         bool _callback
     ) external virtual onlyRole(MASTER_OF_COIN_ADMIN_ROLE) {
-        require(_endTimestamp > _startTimestamp, 'Rewards must last > 1 sec');
-        require(!streams.contains(_stream), 'Stream for address already exists');
+        require(_endTimestamp > _startTimestamp, "Rewards must last > 1 sec");
+        require(!streams.contains(_stream), "Stream for address already exists");
 
         if (streams.add(_stream)) {
             streamConfig[_stream] = CoinStream({
@@ -205,7 +219,7 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         uint256 secondsToEnd = stream.endTimestamp - stream.lastRewardTimestamp;
         uint256 rewardsLeft = secondsToEnd * stream.ratePerSecond;
 
-        require(_amount <= rewardsLeft, 'Reduce amount too large, rewards already paid');
+        require(_amount <= rewardsLeft, "Reduce amount too large, rewards already paid");
 
         stream.ratePerSecond = (rewardsLeft - _amount) / secondsToEnd;
         stream.totalRewards -= _amount;
@@ -217,24 +231,32 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         address _stream,
         uint256 _startTimestamp,
         uint256 _endTimestamp
-    ) external virtual onlyRole(MASTER_OF_COIN_ADMIN_ROLE) streamExists(_stream) callbackStream(_stream) {
+    )
+        external
+        virtual
+        onlyRole(MASTER_OF_COIN_ADMIN_ROLE)
+        streamExists(_stream)
+        callbackStream(_stream)
+    {
         CoinStream storage stream = streamConfig[_stream];
 
         if (_startTimestamp > 0) {
-            require(_startTimestamp > block.timestamp, 'startTimestamp cannot be in the past');
+            require(_startTimestamp > block.timestamp, "startTimestamp cannot be in the past");
 
             stream.startTimestamp = _startTimestamp;
             stream.lastRewardTimestamp = _startTimestamp;
         }
 
         if (_endTimestamp > 0) {
-            require(_endTimestamp > _startTimestamp, 'Rewards must last > 1 sec');
-            require(_endTimestamp > block.timestamp, 'Cannot end rewards in the past');
+            require(_endTimestamp > _startTimestamp, "Rewards must last > 1 sec");
+            require(_endTimestamp > block.timestamp, "Cannot end rewards in the past");
 
             stream.endTimestamp = _endTimestamp;
         }
 
-        stream.ratePerSecond = (stream.totalRewards - stream.paid) / (stream.endTimestamp - stream.lastRewardTimestamp);
+        stream.ratePerSecond =
+            (stream.totalRewards - stream.paid) /
+            (stream.endTimestamp - stream.lastRewardTimestamp);
 
         emit StreamTimeUpdated(_stream, _startTimestamp, _endTimestamp);
     }
@@ -263,7 +285,11 @@ contract MasterOfCoin is IMasterOfCoin, Initializable, AccessControlEnumerableUp
         emit CallbackSet(_stream, _value);
     }
 
-    function withdrawMagic(address _to, uint256 _amount) external virtual onlyRole(MASTER_OF_COIN_ADMIN_ROLE) {
+    function withdrawMagic(address _to, uint256 _amount)
+        external
+        virtual
+        onlyRole(MASTER_OF_COIN_ADMIN_ROLE)
+    {
         magic.safeTransfer(_to, _amount);
         emit Withdraw(_to, _amount);
     }

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8;
 
-import '@openzeppelin/contracts/token/ERC1155/IERC1155.sol';
-import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
-import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
-import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import './MAGIC/IAtlasMine.sol';
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./MAGIC/IAtlasMine.sol";
 
 contract MagicStaking is Ownable {
     address public treasure;
@@ -33,22 +33,22 @@ contract MagicStaking is Ownable {
     }
 
     function setAtlasMine(address _atlasMine) external onlyOwner {
-        require(_atlasMine != address(0), 'atlasmine zero address');
-        require(address(atlasMine) != _atlasMine, 'same atlasMine address');
+        require(_atlasMine != address(0), "atlasmine zero address");
+        require(address(atlasMine) != _atlasMine, "same atlasMine address");
         atlasMine = IAtlasMine(_atlasMine);
         emit AtlasMineChanged(address(atlasMine));
     }
 
     function setTreasure(address _treasure) external onlyOwner {
-        require(_treasure != address(0), 'treasure zero address');
-        require(treasure != _treasure, 'same treasure address');
+        require(_treasure != address(0), "treasure zero address");
+        require(treasure != _treasure, "same treasure address");
         treasure = _treasure;
         emit TreasureChanged(treasure);
     }
 
     function setLegion(address _legion) external onlyOwner {
-        require(_legion != address(0), 'legion zero address');
-        require(legion != _legion, 'same legion address');
+        require(_legion != address(0), "legion zero address");
+        require(legion != _legion, "same legion address");
         legion = _legion;
         emit LegionChanged(legion);
     }
@@ -78,8 +78,8 @@ contract MagicStaking is Ownable {
         uint256 tokenId,
         uint256 amount
     ) external onlyOwner {
-        require(nft != address(0), 'nft address zero');
-        IERC1155(nft).safeTransferFrom(address(this), to, tokenId, amount, bytes(''));
+        require(nft != address(0), "nft address zero");
+        IERC1155(nft).safeTransferFrom(address(this), to, tokenId, amount, bytes(""));
         emit NftWithdrawn(nft, to, tokenId, amount);
     }
 
@@ -88,7 +88,7 @@ contract MagicStaking is Ownable {
         address to,
         uint256 tokenId
     ) external onlyOwner {
-        require(nft != address(0), 'nft address zero');
+        require(nft != address(0), "nft address zero");
         IERC721(nft).safeTransferFrom(address(this), to, tokenId);
         emit NftWithdrawn(nft, to, tokenId, 1);
     }

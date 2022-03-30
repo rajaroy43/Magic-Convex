@@ -1,7 +1,7 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { BigNumberish, Wallet } from 'ethers'
-import { BytesLike } from 'ethers/lib/utils'
-import { IERC1155, IERC721, MagicStaking, MagicDepositor, Treasure, Legion } from '../typechain'
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumberish, Wallet } from "ethers";
+import { BytesLike } from "ethers/lib/utils";
+import { IERC1155, IERC721, MagicStaking, MagicDepositor, Treasure, Legion } from "../typechain";
 
 /**
  *
@@ -16,9 +16,9 @@ export async function stakeLegion(
   tokenId: number,
   alreadyApproved = false
 ) {
-  if (!alreadyApproved) await legion.connect(wallet).approve(staking.address, tokenId)
-  await legion.connect(wallet).transferFrom(wallet.address, staking.address, tokenId)
-  return await staking.connect(wallet).stakeLegion(tokenId)
+  if (!alreadyApproved) await legion.connect(wallet).approve(staking.address, tokenId);
+  await legion.connect(wallet).transferFrom(wallet.address, staking.address, tokenId);
+  return await staking.connect(wallet).stakeLegion(tokenId);
 }
 
 /**
@@ -34,7 +34,7 @@ export async function unStakeLegion(
   staking: MagicStaking | MagicDepositor,
   tokenId: number
 ) {
-  return await staking.connect(wallet).unStakeLegion(tokenId)
+  return await staking.connect(wallet).unStakeLegion(tokenId);
 }
 
 /**
@@ -53,9 +53,11 @@ export async function stakeTreasures(
   data: BytesLike,
   alreadyApproved = false
 ) {
-  if (!alreadyApproved) await treasure.connect(wallet).setApprovalForAll(staking.address, true)
-  await treasure.connect(wallet).safeTransferFrom(wallet.address, staking.address, tokenId, amount, data)
-  return await staking.connect(wallet).stakeTreasure(tokenId, amount)
+  if (!alreadyApproved) await treasure.connect(wallet).setApprovalForAll(staking.address, true);
+  await treasure
+    .connect(wallet)
+    .safeTransferFrom(wallet.address, staking.address, tokenId, amount, data);
+  return await staking.connect(wallet).stakeTreasure(tokenId, amount);
 }
 
 /**
@@ -72,5 +74,5 @@ export async function unStakeTreasures(
   tokenId: number,
   amount: BigNumberish
 ) {
-  return await staking.connect(wallet).unStakeTreasure(tokenId, amount)
+  return await staking.connect(wallet).unStakeTreasure(tokenId, amount);
 }
