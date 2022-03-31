@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { BaseFixture } from "./fixtures/BaseFixture";
 import { ethers } from "ethers";
 
-import { ONE_MAGIC_BN, ONE_MONTH_IN_SECONDS, ONE_THOUSAND_MAGIC_BN } from "../utils/constants";
+import { ONE_MAGIC_BN, ONE_WEEK_IN_SECONDS, ONE_THOUSAND_MAGIC_BN } from "../utils/constants";
 
 import { deployments, timeAndMine } from "hardhat";
 import { depositMagicInGuild } from "../utils/DepositMagicInGuild";
@@ -78,7 +78,7 @@ describe("Reward Pool", () => {
           depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount),
         ]);
 
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
         await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
 
         await magicDepositor.connect(alice).claimMintedShares(i + 1, false);
@@ -229,7 +229,7 @@ describe("Reward Pool", () => {
 
           // earmarking reward from magicDepositor
 
-          await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+          await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
           await expect(
             depositMagicInGuild(carol, magicToken, magicDepositor, ONE_MAGIC_BN)
           ).to.emit(rewardPool, "RewardAdded");

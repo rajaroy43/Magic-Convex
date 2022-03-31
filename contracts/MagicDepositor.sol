@@ -19,7 +19,7 @@ contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicStaking {
 
     /** Constants */
     uint8 private constant LOCK_FOR_TWELVE_MONTH = 4;
-    uint256 private constant ONE_MONTH = 30 days;
+    uint256 private constant ONE_WEEK = 7 days;
     uint256 private constant PRECISION = 1e18;
 
     /// @notice Address of Magic token
@@ -212,7 +212,7 @@ contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicStaking {
     function _initializeNewAtlasDeposit() internal returns (AtlasDeposit storage atlasDeposit) {
         atlasDeposit = atlasDeposits[++currentAtlasDepositIndex];
         atlasDeposit.exists = true;
-        atlasDeposit.activationTimestamp = block.timestamp + ONE_MONTH;
+        atlasDeposit.activationTimestamp = block.timestamp + ONE_WEEK;
         return atlasDeposit;
     }
 
