@@ -4,7 +4,6 @@ import {
   MasterOfCoin,
   Magic,
   PrMagicToken,
-  XmgMagicToken,
   MagicDepositor,
   Legion,
   Treasure,
@@ -84,8 +83,6 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
   const PrMagicToken = await ethers.getContractFactory("prMagicToken");
   const prMagicToken = <PrMagicToken>await PrMagicToken.deploy();
 
-  const XmgMagicToken = await ethers.getContractFactory("xmgMagicToken");
-  const xmgMagicToken = <XmgMagicToken>await XmgMagicToken.deploy(prMagicToken.address);
 
   const MagicDepositor = await ethers.getContractFactory("MagicDepositor");
   const magicDepositor = <MagicDepositor>(

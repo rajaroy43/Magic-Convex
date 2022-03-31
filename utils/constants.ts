@@ -19,7 +19,6 @@ export const ARBITRUM_BLOCK_GAS_LIMIT = 200_000_000;
  * Contract names
  */
 export const PR_MAGIC_TOKEN_CONTRACT_NAME = "prMagicToken";
-export const XMG_MAGIC_TOKEN_CONTRACT_NAME = "xmgMagicToken";
 export const MAGIC_DEPOSITOR_CONTRACT_NAME = "MagicDepositor";
 export const MAGIC_STAKING_CONTRACT_NAME = "MagicStaking";
 export const REWARD_POOL_CONTRACT_NAME = "RewardPool";
