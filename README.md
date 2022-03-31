@@ -16,12 +16,46 @@ Like `Convex` users should deposit the `prMagic` tokens into `prMagicStaking` co
 
 ### prMagic
 
-loked Magic token (similar to `cvxCRV`).
+Locked Magic token (similar to `cvxCRV`).
 
 ## Token & Fund Flow Diagrams
 
-- Token Flow: [https://hackmd.io/@6SvAFKzYSmaq6gGIHx4gJQ/BydZROeM5/edit](https://hackmd.io/@6SvAFKzYSmaq6gGIHx4gJQ/BydZROeM5/edit)\*\*
-- Fund Flow: [https://hackmd.io/@JDCxe2qCTq2jQJUOxbla2w/HJ7-3wZM9](https://hackmd.io/@JDCxe2qCTq2jQJUOxbla2w/HJ7-3wZM9)
+### Token Flow Diagram
+
+```mermaid
+graph TD;
+    U[User] -->|MAGIC| D[1. Deposits to MagicDepositor]
+    D --> |MAGIC| L[2. Locks on AtlasMine]
+    L --> M[3. Mints prMAGIC]
+    M -->|prMAGIC| S{Stake}
+    S --> |Y| S1[3. Stakes to prMagicStaking]
+    S1 --> U
+    S --> |No| U
+```
+
+### Fund Flow Diagram
+
+```mermaid
+graph TD
+    A[User] --> B(Deposit)
+    subgraph MagicDepositor
+        B ---> |Magic| C{Withdraw}
+        C ---> |Y| D(Withdraw Magic)
+        C ---> |N| E{Harvest}
+        E ---> |Y| F(Harvest Magic)
+        E ---> |N| G{Active}
+        G ---> |Y| H(Mint prMagic)
+        H ---> |prMagic| H ---> I(Deposit Magic)
+    end
+    subgraph AtlasMine
+    end
+    D -.-> AtlasMine -.-> |Magic| D --> E
+    F -.-> AtlasMine -.-> |Magic| F ---> G
+    I -.-> |Magic| AtlasMine -.-> I
+    G ---> |N| J
+    I ---> J
+    J[End]
+```
 
 ## Project Setup
 
