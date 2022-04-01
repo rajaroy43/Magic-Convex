@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./MAGIC/IAtlasMine.sol";
-import {IRewards, IMagicDepositor} from "./Interfaces.sol";
-import "./prMagicToken.sol";
+import {IRewards, IMagicDepositor, IPrMagicToken} from "./Interfaces.sol";
 import {AtlasDeposit, AtlasDepositLibrary} from "./libs/AtlasDeposit.sol";
 import "./MagicDepositorConfig.sol";
 import "./MagicNftStaking.sol";
 
 /// @title MagicDepositor
 /// @notice cvxCRV like perpetual staking contract of MAGIC tokens
-contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicNftStaking {
-    using SafeERC20 for IERC20;
-    using SafeERC20 for prMagicToken;
+contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig, MagicNftStaking {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20Upgradeable for IPrMagicToken;
     using AtlasDepositLibrary for AtlasDeposit;
 
     /** Constants */
@@ -23,9 +23,9 @@ contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicNftStakin
     uint256 private constant PRECISION = 1e18;
 
     /// @notice Address of Magic token
-    IERC20 public magic;
+    IERC20Upgradeable public magic;
     /// @notice Address of prMagic token(similar to cvxCRV)
-    prMagicToken public prMagic;
+    IPrMagicToken public prMagic;
 
     /** State variables */
     /// @notice Info of each deposit
@@ -67,15 +67,18 @@ contract MagicDepositor is IMagicDepositor, MagicDepositorConfig, MagicNftStakin
     /// @param stakingReward The amount of Magic tokens for the staking
     event RewardsEarmarked(address indexed user, uint256 treasuryReward, uint256 stakingReward);
 
-    constructor(
+    function initialize(
         address _magic,
         address _prMagic,
         address _atlasMine,
         address _treasure,
         address _legion
-    ) MagicNftStaking(_atlasMine, _treasure, _legion) {
-        magic = IERC20(_magic);
-        prMagic = prMagicToken(_prMagic);
+    ) external initializer {
+        __Ownable_init_unchained();
+        __MagicStaking_init_unchained(_atlasMine, _treasure, _legion);
+
+        magic = IERC20Upgradeable(_magic);
+        prMagic = IPrMagicToken(_prMagic);
     }
 
     /** USER EXPOSED FUNCTIONS */

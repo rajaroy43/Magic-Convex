@@ -6,10 +6,9 @@ import {
   TREASURE_NFT_ADDRESS,
   LEGION_NFT_ADDRESS,
   PR_MAGIC_TOKEN_CONTRACT_NAME,
-  MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG,
-  REWARD_POOL_CONTRACT_NAME,
+  MAGIC_DEPOSITOR_CONTRACT_NAME,
 } from "../../utils/constants";
-import { MagicDepositor__factory, PrMagicToken } from "../../typechain";
+import { MagicDepositor, PrMagicToken } from "../../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -21,15 +20,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const prMagicToken = (await getContract(PR_MAGIC_TOKEN_CONTRACT_NAME)) as PrMagicToken;
 
-  const { address: magicDepositorAddress } = await deploy("MagicDepositor", {
-    args: [
-      MAGIC_TOKEN_ADDRESS,
-      prMagicToken.address,
-      ATLAS_MINE_ADDRESS,
-      TREASURE_NFT_ADDRESS,
-      LEGION_NFT_ADDRESS,
-    ],
+  const { address: magicDepositorAddress } = await deploy(MAGIC_DEPOSITOR_CONTRACT_NAME, {
     from: deployer,
+    proxy: {
+      proxyContract: "OpenZeppelinTransparentProxy",
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [
+            MAGIC_TOKEN_ADDRESS,
+            prMagicToken.address,
+            ATLAS_MINE_ADDRESS,
+            TREASURE_NFT_ADDRESS,
+            LEGION_NFT_ADDRESS,
+          ],
+        },
+      },
+    },
   });
 
   await prMagicToken.transferOwnership(magicDepositorAddress).then((tx) => tx.wait());

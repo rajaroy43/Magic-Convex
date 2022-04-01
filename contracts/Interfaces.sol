@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+
 interface IRewards {
     function stake(address, uint256) external;
 
@@ -26,4 +28,10 @@ interface IMagicDepositor {
         external
         view
         returns (uint256);
+}
+
+interface IPrMagicToken is IERC20Upgradeable {
+    function mint(address _to, uint256 _amount) external;
+
+    function burn(address _from, uint256 _amount) external;
 }

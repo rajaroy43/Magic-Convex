@@ -5,17 +5,19 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./MAGIC/IAtlasMine.sol";
 
 /// @title MagicNftStaking
 /// @notice nft staking by magicDepositor for boosting rewards
-
-contract MagicNftStaking is Ownable {
+contract MagicNftStaking is Initializable, OwnableUpgradeable {
     address public treasure; //treasure erc1155 nft in atlasmine
     address public legion; //legion erc721 nft in atlasmine
 
     IAtlasMine public atlasMine; //AtlasMine contract
+
+    uint256[50] private __gap;
 
     // EVENTS
 
@@ -38,11 +40,11 @@ contract MagicNftStaking is Ownable {
     /// @param legion Address of legion contract
     event LegionChanged(address legion);
 
-    constructor(
+    function __MagicStaking_init_unchained(
         address _atlasMine,
         address _treasure,
         address _legion
-    ) {
+    ) internal onlyInitializing {
         atlasMine = IAtlasMine(_atlasMine);
         treasure = _treasure;
         legion = _legion;
