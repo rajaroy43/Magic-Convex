@@ -11,7 +11,8 @@
     "coverage": "hardhat coverage",
     "dev": "nodemon",
     "prettier": "prettier --write \"./**/*.{ts,sol}\"",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "deploy:live": "hardhat deploy --tags live --network arbitrum_mainnet"
   },
   "repository": {
     "type": "git",

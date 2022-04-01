@@ -80,10 +80,12 @@ In the directory of your choice run the command:
 
 ### Create Environment Variable
 
-Create `.env` file in the root directory and the alchemy arbitrum url:
+Create `.env` file in the root directory and the following variable:
 
 ```
-    NODE_URL=
+    NODE_URL = ALCHEMY_ARBITRUM_MAINNET
+    MAINNET_PRIVKEY = YOUR_PRIVATE_KEY
+    TESTNET_PRIVKEY = YOUR_PRIVATE_KEY
 ```
 
 ### Compile
@@ -96,8 +98,15 @@ Compile the smart contracts with Hardhat:
 
 ### Test
 
-Run the Mocha tests:
+Run the hardhat contract tests:
 
 ```
     $ yarn test
+```
+
+### Precious Deployment on arbitrum mainnet
+
+```
+   $ yarn deploy:live
+
 ```

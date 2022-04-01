@@ -32,9 +32,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     deployer,
     rewardPoolAddress
   );
-
+  if(hre.tracer)
   hre.tracer.nameTags[rewardPoolAddress] = "RewardPool";
 };
 
 export default func;
-func.tags = ["RewardPool"];
+func.tags = ["RewardPool","live"];

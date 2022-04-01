@@ -40,9 +40,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   await prMagicToken.transferOwnership(magicDepositorAddress).then((tx) => tx.wait());
-
+  if(hre.tracer)
   hre.tracer.nameTags[magicDepositorAddress] = "MagicDepositor";
 };
 
 export default func;
-func.tags = ["MagicDepositor"];
+func.tags = ["MagicDepositor","live"];
