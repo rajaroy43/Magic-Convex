@@ -8,13 +8,14 @@ import {
   MAGIC_TOKEN_ADDRESS,
   ONE_DAY_IN_SECONDS,
   ONE_MAGIC_BN,
-  ONE_MONTH_IN_SECONDS,
   PRECISION,
   ONE_THOUSAND_MAGIC_BN,
   ONE_LEGION,
   ONE_TREAUSRE,
   TREASURE_TOKEN_IDS,
   LEGION_TOKEN_IDS,
+  ONE_WEEK_IN_SECONDS,
+  ARBITRUM_BLOCK_GAS_LIMIT,
 } from "../utils/constants";
 import { awaitTx } from "../utils/AwaitTx";
 import { depositMagicInGuild } from "../utils/DepositMagicInGuild";
@@ -132,7 +133,7 @@ describe("MagicDepositor", () => {
         await depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount);
         await depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount);
 
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         return { ...baseFixture };
       });
@@ -236,7 +237,7 @@ describe("MagicDepositor", () => {
           depositMagicInGuild(carol, magicToken, magicDepositor, firstMonthDepositAmount, true),
         ]);
 
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, secondMonthDepositAmount, true),
@@ -244,7 +245,7 @@ describe("MagicDepositor", () => {
           depositMagicInGuild(carol, magicToken, magicDepositor, secondMonthDepositAmount, true),
         ]);
 
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         return { ...baseFixture };
       });
@@ -273,24 +274,24 @@ describe("MagicDepositor", () => {
 
       it("greatly increases harvest rate after second deposit is activated", async () => {
         const { alice, magicToken, magicDepositor } = await fixture();
-        await magicDepositor.update();
+        await magicDepositor.update({gasLimit:ARBITRUM_BLOCK_GAS_LIMIT});
 
         const harvestRatePre = (await magicDepositor.harvestForNextDeposit())
           .mul(PRECISION)
-          .div(ONE_MONTH_IN_SECONDS);
+          .div(ONE_WEEK_IN_SECONDS);
 
         expect(harvestRatePre).to.be.gte(0);
         await depositMagicInGuild(alice, magicToken, magicDepositor, ONE_MAGIC_BN, true);
 
         //After activation harvestForNextDeposit will be 0
         expect(await magicDepositor.harvestForNextDeposit()).to.be.equal(0);
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
-        await magicDepositor.update();
+        await magicDepositor.update({gasLimit:ARBITRUM_BLOCK_GAS_LIMIT});
 
         const harvestRatePost = (await magicDepositor.harvestForNextDeposit())
           .mul(PRECISION)
-          .div(ONE_MONTH_IN_SECONDS);
+          .div(ONE_WEEK_IN_SECONDS);
 
         expect(harvestRatePost).to.be.gte(0);
       });
@@ -311,7 +312,7 @@ describe("MagicDepositor", () => {
 
         for (let i = 0; i < 13; i++) {
           await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
-          await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+          await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
         }
 
         return { ...baseFixture };
@@ -357,7 +358,7 @@ describe("MagicDepositor", () => {
 
         for (let i = 0; i < 2; i++) {
           await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
-          await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+          await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
         }
 
         return { ...baseFixture };
@@ -397,7 +398,7 @@ describe("MagicDepositor", () => {
           depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
           depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount),
         ]);
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
       }
 
       await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
@@ -470,7 +471,7 @@ describe("MagicDepositor", () => {
           depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
           depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount),
         ]);
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
       }
 
       await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
@@ -514,7 +515,7 @@ describe("MagicDepositor", () => {
           depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
         ]);
 
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
           depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
@@ -528,7 +529,7 @@ describe("MagicDepositor", () => {
       // In second month
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
@@ -550,7 +551,7 @@ describe("MagicDepositor", () => {
       // In third month
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
@@ -580,7 +581,7 @@ describe("MagicDepositor", () => {
           depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
         ]);
 
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
           depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
@@ -604,7 +605,7 @@ describe("MagicDepositor", () => {
       // In second month
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
@@ -631,7 +632,7 @@ describe("MagicDepositor", () => {
       // In third month
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
-        await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),

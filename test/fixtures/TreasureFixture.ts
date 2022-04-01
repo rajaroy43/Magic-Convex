@@ -1,4 +1,4 @@
-import { deployments } from "hardhat";
+import { deployments, upgrades } from "hardhat";
 import {
   AtlasMine,
   MasterOfCoin,
@@ -86,14 +86,15 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
 
   const MagicDepositor = await ethers.getContractFactory("MagicDepositor");
   const magicDepositor = <MagicDepositor>(
-    await MagicDepositor.deploy(
+    await upgrades.deployProxy(MagicDepositor, [
       magicToken.address,
       prMagicToken.address,
       atlasMine.address,
       treasure.address,
-      legion.address
-    )
+      legion.address,
+    ])
   );
+  await magicDepositor.deployed();
 
   const RewardPool = await ethers.getContractFactory("RewardPool");
   const rewardPool = <RewardPool>(

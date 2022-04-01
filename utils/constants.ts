@@ -27,6 +27,7 @@ export const REWARD_POOL_CONTRACT_NAME = "RewardPool";
  * Some unit variables
  */
 export const ONE_MONTH_IN_SECONDS = 30 * 24 * 60 * 60;
+export const ONE_WEEK_IN_SECONDS = 7 * 24 * 60 * 60;
 export const FORTY_FIVE_DAYS_IN_SECONDS = 45 * 24 * 60 * 60;
 export const ONE_DAY_IN_SECONDS = 24 * 3600;
 export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;

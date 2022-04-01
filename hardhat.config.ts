@@ -12,6 +12,7 @@ import "solidity-coverage";
 import "hardhat-deploy";
 import "hardhat-tracer";
 import "@atixlabs/hardhat-time-n-mine";
+import "@openzeppelin/hardhat-upgrades";
 
 import { HardhatUserConfig, NetworksUserConfig } from "hardhat/types";
 import { ARBITRUM_BLOCK_GAS_LIMIT } from "./utils/constants";
