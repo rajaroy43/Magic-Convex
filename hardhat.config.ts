@@ -22,12 +22,6 @@ if (!NODE_URL) throw new Error(`Needs a NODE_URL to fork`);
 
 let networks: NetworksUserConfig = {};
 
-if (process.env.GOERLI) {
-  networks["goerli"] = {
-    url: process.env.GOERLI,
-  };
-}
-
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   solidity: {
@@ -56,6 +50,18 @@ const config: HardhatUserConfig = {
     localhost: {},
     coverage: {
       url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
+    },
+    arbitrum_mainnet: {
+      url: 'https://arb1.arbitrum.io/rpc',
+      accounts: process.env['MAINNET_PRIVKEY']
+        ? [process.env['MAINNET_PRIVKEY']]
+        : [],
+    },
+    arbitrum_testnet: {
+      url: 'https://rinkeby.arbitrum.io/rpc',
+      accounts: process.env['TESTNET_PRIVKEY']
+        ? [process.env['TESTNET_PRIVKEY']]
+        : [],
     },
     ...networks,
   },
