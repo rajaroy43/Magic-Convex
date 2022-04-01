@@ -13,6 +13,7 @@ import "hardhat-deploy";
 import "hardhat-tracer";
 import "@atixlabs/hardhat-time-n-mine";
 import "@openzeppelin/hardhat-upgrades";
+import "@primitivefi/hardhat-dodoc";
 
 import { HardhatUserConfig, NetworksUserConfig } from "hardhat/types";
 import { ARBITRUM_BLOCK_GAS_LIMIT } from "./utils/constants";
@@ -70,6 +71,9 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 0,
+  },
+  dodoc: {
+    runOnCompile: true,
   },
 };
 
