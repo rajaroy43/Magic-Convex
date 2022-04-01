@@ -6,6 +6,8 @@ Precious utilizes the convex-model to create the most optimized staking avenue f
 
 ## Precious Contracts
 
+Smart contract function documentation can be found in [docs/](https://github.com/advancedblockchain/precious/tree/main/docs)
+
 ### MagicDepositor
 
 `MagicDepositor` allows users deposit any amount of Magic tokens and receive back prMagic tokens in exchange of providing Magic. Magic tokens deposited during an epoch are deposited into `AtlasMine`. `MagicDepositor` can hold `Treasure` and `Legions` nfts and deposit to `AtlasMine` to boot rewards. Harvested Magic rewards from AtlasMine splits into treasury and `prMagicStaking` contract.
