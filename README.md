@@ -63,10 +63,39 @@ The following are the commands to set up the environment.
 
 ### Clone the Precious:
 
-```
 In the directory of your choice run the command:
-    git clone git@github.com:advancedblockchain/precious.git
 
-Install dependencies:
-    yarn
+```
+    git clone git@github.com:advancedblockchain/precious.git
+```
+
+### Install dependencies:
+
+```
+    $ cd precious
+    $ yarn(or npm install)
+```
+
+### Create Environment Variable
+
+Create `.env` file in the root directory and the alchemy arbitrum url:
+
+```
+    NODE_URL=
+```
+
+### Compile
+
+Compile the smart contracts with Hardhat:
+
+```
+    $ yarn compile
+```
+
+### Test
+
+Run the Mocha tests:
+
+```
+    $ yarn test
 ```
