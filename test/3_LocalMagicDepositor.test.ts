@@ -15,6 +15,7 @@ import {
   ONE_TREAUSRE,
   TREASURE_TOKEN_IDS,
   LEGION_TOKEN_IDS,
+  ONE_MONTH_IN_SECONDS,
 } from "../utils/constants";
 import { awaitTx } from "../utils/AwaitTx";
 import {
@@ -23,14 +24,17 @@ import {
   unStakeLegion,
   unStakeTreasures,
 } from "../utils/MagicNftStaking";
-import { AtlasMine, MagicDepositor, Treasure, Legion } from "../typechain";
+import { AtlasMine, MagicDepositor, Treasure, Legion, RewardPool, IERC20 } from "../typechain";
+import { stakePrMagic } from "../utils/StakeRewardPool";
 
 const { AddressZero } = ethers.constants;
 
 describe("Local - MagicDepositor", () => {
-  function checkAtlasDepositHasBeenInitialized(atlasDeposit: any) {
+  function checkAtlasDepositHasBeenInitialized(atlasDeposit: any, isUpdate?: boolean) {
     expect(atlasDeposit.activationTimestamp).to.be.gt(0);
-    expect(atlasDeposit.accumulatedMagic).to.be.gt(0);
+    isUpdate
+      ? expect(atlasDeposit.accumulatedMagic).to.equal(0)
+      : expect(atlasDeposit.accumulatedMagic).to.be.gt(0);
     expect(atlasDeposit.mintedShares).to.be.equal(0);
     expect(atlasDeposit.exists).to.be.equal(true);
     expect(atlasDeposit.isActive).to.be.equal(false);
@@ -128,7 +132,7 @@ describe("Local - MagicDepositor", () => {
       });
     });
 
-    describe("after the second month", () => {
+    describe("after the second week", () => {
       const depositAmount = ONE_MAGIC_BN;
 
       const fixture = deployments.createFixture(async () => {
@@ -144,15 +148,15 @@ describe("Local - MagicDepositor", () => {
         return { ...treasureFixture };
       });
 
-      it("activates the first month and initializes the second month", async () => {
+      it("activates the first week and initializes the second week", async () => {
         const { alice, magicDepositor, atlasMine } = await fixture();
 
         expect(await atlasMine.getAllUserDepositIds(magicDepositor.address)).to.have.length(0);
 
-        // After a deposit has been accumulating user funds for one month,
+        // After a deposit has been accumulating user funds for one week,
         // this deposit is forwarded to the AtlasMine. This happens automatically when
         // a user tries to deposit into the contract, initializing a new accumulation deposit
-        // for another month
+        // for another week
         await magicDepositor.connect(alice).deposit(ONE_MAGIC_BN);
         expect(await atlasMine.getAllUserDepositIds(magicDepositor.address)).to.have.length(1);
 
@@ -168,9 +172,11 @@ describe("Local - MagicDepositor", () => {
       it("correctly computes shares", async () => {
         const { alice, prMagicToken, magicDepositor } = await fixture();
 
-        await expect(() =>
-          magicDepositor.connect(alice).deposit(depositAmount)
-        ).to.changeTokenBalance(prMagicToken, magicDepositor, depositAmount.mul(3));
+        await expect(() => magicDepositor.connect(alice).update()).to.changeTokenBalance(
+          prMagicToken,
+          magicDepositor,
+          depositAmount.mul(3)
+        );
       });
 
       it("correctly harvests magic from atlas mine", async () => {
@@ -205,9 +211,9 @@ describe("Local - MagicDepositor", () => {
       });
     });
 
-    describe("after the third month", () => {
-      const firstMonthDepositAmount = ONE_MAGIC_BN;
-      const secondMonthDepositAmount = ONE_THOUSAND_MAGIC_BN.mul(10);
+    describe("after the third week", () => {
+      const firstWeekDepositAmount = ONE_MAGIC_BN;
+      const secondWeekDepositAmount = ONE_THOUSAND_MAGIC_BN.mul(10);
 
       const fixture = deployments.createFixture(async () => {
         const treasureFixture = await TreasureFixture();
@@ -219,17 +225,17 @@ describe("Local - MagicDepositor", () => {
         ]);
 
         await Promise.all([
-          depositMagicInGuild(alice, magicToken, magicDepositor, firstMonthDepositAmount, true),
-          depositMagicInGuild(bob, magicToken, magicDepositor, firstMonthDepositAmount, true),
-          depositMagicInGuild(carol, magicToken, magicDepositor, firstMonthDepositAmount, true),
+          depositMagicInGuild(alice, magicToken, magicDepositor, firstWeekDepositAmount, true),
+          depositMagicInGuild(bob, magicToken, magicDepositor, firstWeekDepositAmount, true),
+          depositMagicInGuild(carol, magicToken, magicDepositor, firstWeekDepositAmount, true),
         ]);
 
         await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
 
         await Promise.all([
-          depositMagicInGuild(alice, magicToken, magicDepositor, secondMonthDepositAmount, true),
-          depositMagicInGuild(bob, magicToken, magicDepositor, secondMonthDepositAmount, true),
-          depositMagicInGuild(carol, magicToken, magicDepositor, secondMonthDepositAmount, true),
+          depositMagicInGuild(alice, magicToken, magicDepositor, secondWeekDepositAmount, true),
+          depositMagicInGuild(bob, magicToken, magicDepositor, secondWeekDepositAmount, true),
+          depositMagicInGuild(carol, magicToken, magicDepositor, secondWeekDepositAmount, true),
         ]);
 
         await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
@@ -237,7 +243,7 @@ describe("Local - MagicDepositor", () => {
         return { ...treasureFixture };
       });
 
-      it("activates the second month and initializes third month", async () => {
+      it("activates the second week and initializes third week", async () => {
         const { alice, bob, magicToken, magicDepositor } = await fixture();
 
         await Promise.all([
@@ -266,7 +272,7 @@ describe("Local - MagicDepositor", () => {
         const harvestRatePre = (await magicDepositor.harvestForNextDeposit())
           .mul(PRECISION)
           .div(ONE_WEEK_IN_SECONDS);
-        expect(harvestRatePre).to.be.gt(0);
+        expect(harvestRatePre).to.be.gte(0);
 
         await depositMagicInGuild(alice, magicToken, magicDepositor, ONE_MAGIC_BN, true);
 
@@ -297,7 +303,7 @@ describe("Local - MagicDepositor", () => {
 
         for (let i = 0; i < 13; i++) {
           await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
-          await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
+          await timeAndMine.increaseTime(ONE_MONTH_IN_SECONDS + 1);
         }
 
         return { ...treasureFixture };
@@ -311,10 +317,13 @@ describe("Local - MagicDepositor", () => {
         await timeAndMine.setTimeNextBlock(lockedUntil.toNumber() + ONE_DAY_IN_SECONDS * 45 + 1);
 
         // Expect the first deposit to be withdrawn
-        const tx = depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
+        // Expect the first deposit to be withdrawn
+        const tx = await magicDepositor.update();
         await expect(tx)
           .to.emit(atlasMine, "Withdraw")
           .withArgs(magicDepositor.address, 1, depositAmount);
+
+        expect(tx).to.emit(magicDepositor, "ActivateDeposit");
 
         // Expect the first deposit amount to be relocked
         const { logs } = await awaitTx(tx);
@@ -329,7 +338,7 @@ describe("Local - MagicDepositor", () => {
       });
     });
 
-    describe("when there are no deposits for more than one month", () => {
+    describe("when there are no deposits for more than one week", () => {
       const depositAmount = ONE_THOUSAND_MAGIC_BN;
 
       const fixture = deployments.createFixture(async () => {
@@ -349,13 +358,13 @@ describe("Local - MagicDepositor", () => {
         return { ...treasureFixture };
       });
 
-      it("activates previous month and initializes a new one", async () => {
+      it("activates previous weejk and initializes a new one", async () => {
         const { alice, magicToken, magicDepositor, atlasMine } = await fixture();
 
         const { lockedUntil } = await atlasMine.userInfo(magicDepositor.address, 1);
         await timeAndMine.setTimeNextBlock(lockedUntil.toNumber() + ONE_DAY_IN_SECONDS * 45);
 
-        await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
+        await magicDepositor.update();
 
         const [firstAtlasDeposit, secondAtlasDeposit, thirdAtlasDeposit] = await Promise.all([
           magicDepositor.atlasDeposits(1),
@@ -365,7 +374,7 @@ describe("Local - MagicDepositor", () => {
 
         checkAtlasDepositHasBeenActivated(firstAtlasDeposit);
         checkAtlasDepositHasBeenActivated(secondAtlasDeposit);
-        checkAtlasDepositHasBeenInitialized(thirdAtlasDeposit);
+        checkAtlasDepositHasBeenInitialized(thirdAtlasDeposit, true);
       });
     });
   });
@@ -420,7 +429,7 @@ describe("Local - MagicDepositor", () => {
 
     it("correctly transfer shares to the claimant", async () => {
       const { alice, bob, magicToken, prMagicToken, magicDepositor } = await TreasureFixture();
-      // In first month
+      // In first week
       {
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
@@ -438,7 +447,7 @@ describe("Local - MagicDepositor", () => {
           .withArgs(magicDepositor.address, alice.address, depositAmount);
       }
 
-      // In second month
+      // In second week
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
         await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
@@ -460,7 +469,7 @@ describe("Local - MagicDepositor", () => {
           .withArgs(magicDepositor.address, alice.address, aliceMintedShares);
       }
 
-      // In third month
+      // In third week
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
         await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
@@ -486,7 +495,7 @@ describe("Local - MagicDepositor", () => {
     it("Staking prMagic token afterClaiming", async () => {
       const { alice, bob, magicToken, prMagicToken, magicDepositor, rewardPool } =
         await TreasureFixture();
-      // In first month
+      // In first week
       {
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
@@ -514,7 +523,7 @@ describe("Local - MagicDepositor", () => {
       const stakedbob = await rewardPool.balanceOf(bob.address);
       expect(stakedbob).to.be.equal(depositAmount);
 
-      // In second month
+      // In second week
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
         await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
@@ -541,7 +550,7 @@ describe("Local - MagicDepositor", () => {
         expect(stakedbob).to.be.equal(depositAmount.mul(2));
       }
 
-      // In third month
+      // In third week
       {
         const depositIndex = await magicDepositor.currentAtlasDepositIndex();
         await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
@@ -1054,6 +1063,305 @@ describe("Local - MagicDepositor", () => {
         //Withdrawing Legion Back
 
         await magicDepositor.withdrawERC721(legion.address, alice.address, LEGION_TOKEN_ID);
+      });
+    });
+  });
+  describe("Reward Pool", () => {
+    describe("Reward Pool Intialization", () => {
+      it("Reward Pool Initialized", async () => {
+        const {
+          prMagicToken: { address: prMagicTokenAddress },
+          magicToken: { address: magicTokenAdrress },
+          magicDepositor: { address: magicDepositorAddress },
+          rewardPool,
+        } = await TreasureFixture();
+        const stakingToken = await rewardPool.stakingToken();
+        const rewardToken = await rewardPool.rewardToken();
+        const operator = await rewardPool.operator();
+        expect(stakingToken.toLowerCase()).to.eql(prMagicTokenAddress.toLowerCase());
+        expect(rewardToken.toLowerCase()).to.eql(magicTokenAdrress.toLowerCase());
+        expect(operator.toLowerCase()).to.eql(magicDepositorAddress.toLowerCase());
+        expect(await rewardPool.lastUpdateTime()).to.equal(0);
+        expect(await rewardPool.rewardRate()).to.equal(0);
+        expect(await rewardPool.historicalRewards()).to.equal(0);
+        expect(await rewardPool.periodFinish()).to.equal(0);
+        expect(await rewardPool.queuedRewards()).to.equal(0);
+        expect(await rewardPool.currentRewards()).to.equal(0);
+      });
+
+      it("Staking reward with not enough prMagicToken", async () => {
+        const { alice, rewardPool } = await TreasureFixture();
+        const stakedAmount = ONE_THOUSAND_MAGIC_BN;
+        await expect(
+          rewardPool.connect(alice).stakeFor(alice.address, stakedAmount)
+        ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      });
+
+      it("Will get 0 zero reward if no staking yet", async () => {
+        const { alice, rewardPool } = await TreasureFixture();
+
+        const rewardPoolBalancePre = await rewardPool.balanceOf(alice.address);
+        await expect(rewardPool.connect(alice).getReward(alice.address)).to.not.emit(
+          rewardPool,
+          "RewardPaid"
+        );
+
+        const rewardPoolBalancePost = await rewardPool.balanceOf(alice.address);
+        expect(rewardPoolBalancePost).to.equal(rewardPoolBalancePre);
+      });
+
+      it("Should not withdraw any amount if stakeAmount = 0", async () => {
+        const { alice, rewardPool } = await TreasureFixture();
+        const withdrawAmount = ONE_THOUSAND_MAGIC_BN;
+        await expect(rewardPool.connect(alice).withdraw(withdrawAmount, true)).to.be.revertedWith(
+          "Arithmetic operation underflowed"
+        );
+      });
+    });
+
+    describe("Reward Pool staking/withdrawing/rewarding", () => {
+      const stakedAmount = ONE_THOUSAND_MAGIC_BN;
+
+      const fixture = deployments.createFixture(async () => {
+        const depositAmount = ONE_THOUSAND_MAGIC_BN;
+        const baseFixture = await TreasureFixture();
+        const { alice, bob, carol, magicToken, magicDepositor } = baseFixture;
+
+        for (let i = 0; i < 3; i++) {
+          await Promise.all([
+            depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
+            depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
+            depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount),
+          ]);
+
+          await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
+          await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
+
+          await magicDepositor.connect(alice).claimMintedShares(i + 1, false);
+          await magicDepositor.connect(bob).claimMintedShares(i + 1, false);
+          await magicDepositor.connect(carol).claimMintedShares(i + 1, false);
+        }
+
+        return { ...baseFixture };
+      });
+
+      it("rejects zero inputs", async () => {
+        const { alice, rewardPool } = await fixture();
+
+        await expect(rewardPool.stakeFor(alice.address, 0)).to.be.revertedWith(
+          "RewardPool : Cannot stake 0"
+        );
+      });
+
+      it("Should have zero rewardRate,currentReward and historicalRewards 0 before update", async () => {
+        const { rewardPool } = await fixture();
+        expect(await rewardPool.currentRewards()).to.equal(0);
+        expect(await rewardPool.rewardRate()).to.equal(0);
+        expect(await rewardPool.historicalRewards()).to.equal(0);
+      });
+
+      describe("Staking prMagic in reward pool", () => {
+        it("Staking prMagic token to reward pool by users", async () => {
+          const { alice, bob, rewardPool, prMagicToken } = await fixture();
+
+          // First ever user stake
+          {
+            await expect(rewardPool.connect(alice).stake(stakedAmount))
+              .to.emit(rewardPool, "Staked")
+              .withArgs(alice.address, stakedAmount);
+
+            expect(await rewardPool.totalSupply()).to.be.equal(stakedAmount);
+            expect(await rewardPool.balanceOf(alice.address)).to.be.equal(stakedAmount);
+          }
+
+          // Secondary user stake
+          {
+            await prMagicToken
+              .connect(bob)
+              .approve(rewardPool.address, ethers.constants.MaxUint256);
+            await expect(rewardPool.connect(bob).stake(stakedAmount))
+              .to.emit(rewardPool, "Staked")
+              .withArgs(bob.address, stakedAmount);
+
+            expect(await rewardPool.totalSupply()).to.be.equal(stakedAmount.mul(2));
+            expect(await rewardPool.balanceOf(bob.address)).to.be.equal(stakedAmount);
+          }
+
+          // First stake increment
+          {
+            await expect(rewardPool.connect(alice).stake(stakedAmount))
+              .to.emit(rewardPool, "Staked")
+              .withArgs(alice.address, stakedAmount);
+
+            expect(await rewardPool.totalSupply()).to.be.equal(stakedAmount.mul(3));
+            expect(await rewardPool.balanceOf(alice.address)).to.be.equal(stakedAmount.mul(2));
+          }
+        });
+      });
+
+      describe("Withdrawing prMAgic from reward pool ", () => {
+        const withdrawnAmount = stakedAmount.div(10); //100 withdrawn amont
+        const fixtureAfterStaking = deployments.createFixture(async () => {
+          const baseFixture = await fixture();
+          const { alice, bob, carol, prMagicToken, rewardPool } = baseFixture;
+
+          await stakePrMagic(alice, prMagicToken, rewardPool, stakedAmount, true);
+          await stakePrMagic(bob, prMagicToken, rewardPool, stakedAmount);
+          await stakePrMagic(carol, prMagicToken, rewardPool, stakedAmount);
+          return { ...baseFixture };
+        });
+
+        const checkWithdraw = async (
+          rewardPool: RewardPool,
+          alice: SignerWithAddress,
+          magicToken: IERC20,
+          claimReward: boolean
+        ) => {
+          const rewardPoolBalancePre = await rewardPool.balanceOf(alice.address);
+          const magicBalancePre = await magicToken.balanceOf(alice.address);
+          for (let i = 0; i < 10; i++) {
+            await expect(rewardPool.connect(alice).withdraw(withdrawnAmount, claimReward))
+              .to.emit(rewardPool, "Withdrawn")
+              .withArgs(alice.address, withdrawnAmount);
+          }
+          const rewardPoolBalancePost = await rewardPool.balanceOf(alice.address);
+          const magicBalancePost = await magicToken.balanceOf(alice.address);
+          expect(rewardPoolBalancePost)
+            .to.equal(rewardPoolBalancePre.sub(withdrawnAmount.mul(10)))
+            .to.equal(0);
+          return { magicBalancePost, magicBalancePre };
+        };
+
+        describe("Before earmark rewards", () => {
+          it("withdrawing consecutively prMagic token from reward pool by users without claiming", async () => {
+            const { alice, rewardPool, magicToken, prMagicToken } = await fixtureAfterStaking();
+            const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+            const claimReward = false;
+            const { magicBalancePost, magicBalancePre } = await checkWithdraw(
+              rewardPool,
+              alice,
+              magicToken,
+              claimReward
+            );
+            const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+            expect(magicBalancePost).to.equal(magicBalancePre);
+            expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+            // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+            await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+              .reverted;
+          });
+
+          it("withdrawing consecutively prMagic token from reward pool by users with claiming", async () => {
+            const { alice, rewardPool, magicToken, prMagicToken } = await fixtureAfterStaking();
+            const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+            const claimReward = true;
+            const { magicBalancePost, magicBalancePre } = await checkWithdraw(
+              rewardPool,
+              alice,
+              magicToken,
+              claimReward
+            );
+            const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+            //no reward in RewardPool yet ,that's why we have same magicBalance
+            expect(magicBalancePost).to.equal(magicBalancePre);
+            expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+            // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+            await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+              .reverted;
+          });
+        });
+
+        describe("After earmark rewards", () => {
+          const fixtureAfterRewardEarmarked = deployments.createFixture(async () => {
+            const fixtureEarmarked = await fixtureAfterStaking();
+            const { magicDepositor } = fixtureEarmarked;
+            await magicDepositor.update();
+            return { ...fixtureEarmarked };
+          });
+          it("withdrawing consecutively prMagic token from reward pool by users without claiming", async () => {
+            const { alice, rewardPool, magicToken, prMagicToken } =
+              await fixtureAfterRewardEarmarked();
+            const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+            const claimReward = false;
+            const { magicBalancePost, magicBalancePre } = await checkWithdraw(
+              rewardPool,
+              alice,
+              magicToken,
+              claimReward
+            );
+            const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+            expect(magicBalancePost).to.equal(magicBalancePre);
+            expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+            // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+            await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+              .reverted;
+          });
+
+          it("withdrawing consecutively prMagic token from reward pool by users with claiming", async () => {
+            const { alice, rewardPool, magicToken, prMagicToken } =
+              await fixtureAfterRewardEarmarked();
+            const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+            const claimReward = true;
+            const { magicBalancePost, magicBalancePre } = await checkWithdraw(
+              rewardPool,
+              alice,
+              magicToken,
+              claimReward
+            );
+            const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+            expect(magicBalancePost).to.gt(magicBalancePre);
+            expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+            // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+            await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+              .reverted;
+          });
+          describe("Geting reward ", () => {
+            it("Geting reward  from reward pool by users without donating by anyone", async () => {
+              const { alice, rewardPool, magicToken } = await fixtureAfterRewardEarmarked();
+              const magicBalancePre = await magicToken.balanceOf(alice.address);
+              const rewardEvents = (
+                await (await rewardPool.connect(alice).getReward(alice.address)).wait()
+              ).events;
+              // @ts-ignore
+              const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
+              const magicBalancePost = await magicToken.balanceOf(alice.address);
+              expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
+              // get reward as 0.0000000000000something  amount
+              await expect(await rewardPool.connect(alice).getReward(alice.address)).to.emit(
+                rewardPool,
+                "RewardPaid"
+              );
+              const magicBalancePostAfterReward = await magicToken.balanceOf(alice.address);
+              expect(magicBalancePostAfterReward).to.gte(magicBalancePost);
+            });
+
+            it("Geting reward  from reward pool  by users with donating ", async () => {
+              const { alice, carol, bob, rewardPool, magicToken, magicDepositor } =
+                await fixtureAfterStaking();
+              const bobMagicBal = await magicToken.balanceOf(bob.address);
+              const rewardPoolMagicBalPre = await magicToken.balanceOf(rewardPool.address);
+              await magicToken.connect(bob).approve(rewardPool.address, bobMagicBal);
+              await rewardPool.connect(bob).donate(bobMagicBal);
+              const queuedRewards = await rewardPool.queuedRewards();
+              const rewardPoolMagicBalPost = await magicToken.balanceOf(rewardPool.address);
+              expect(queuedRewards).to.equal(bobMagicBal);
+              expect(rewardPoolMagicBalPost).to.equal(rewardPoolMagicBalPre.add(bobMagicBal));
+
+              // earmarking reward from magicDepositor
+
+              await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
+              await expect(magicDepositor.update()).to.emit(rewardPool, "RewardAdded");
+              const magicBalancePre = await magicToken.balanceOf(alice.address);
+              const rewardEvents = (
+                await (await rewardPool.connect(alice).getReward(alice.address)).wait()
+              ).events;
+              // @ts-ignore
+              const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
+              const magicBalancePost = await magicToken.balanceOf(alice.address);
+              expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
+            });
+          });
+        });
       });
     });
   });
