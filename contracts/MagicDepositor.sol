@@ -127,7 +127,7 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @notice Withdraw unlocked deposit, Harvest rewards for all deposits, Disperse rewards
     function update() external override {
         _updateAtlasDeposits();
-        // maybe add _checkCurrentDeposit() if it does not brick the contract
+        _checkCurrentDeposit();
     }
 
     /** VIEW FUNCTIONS */
@@ -151,7 +151,6 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
         require(amount > 0, "amount cannot be 0");
         require(to != address(0), "cannot deposit for 0x0");
 
-        _updateAtlasDeposits();
         _checkCurrentDeposit().increaseMagic(amount, to);
         magic.safeTransferFrom(msg.sender, address(this), amount);
 

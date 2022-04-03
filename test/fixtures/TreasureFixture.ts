@@ -116,7 +116,8 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     await magicDepositor.getConfig();
 
   await magicToken.approve(magicDepositor.address, ethers.constants.MaxUint256);
-
+  await magicToken.approve(rewardPool.address, ethers.constants.MaxUint256);
+  await prMagicToken.approve(rewardPool.address, ethers.constants.MaxUint256);
   return {
     alice,
     bob,

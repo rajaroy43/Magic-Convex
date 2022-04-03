@@ -9,7 +9,6 @@ import { depositMagicInGuild } from "../utils/DepositMagicInGuild";
 import { stakePrMagic } from "../utils/StakeRewardPool";
 import { IERC20, RewardPool } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { awaitTx } from "../utils/AwaitTx";
 describe("Reward Pool", () => {
   describe("Reward Pool Intialization", () => {
     it("Reward Pool Initialized", async () => {
@@ -97,6 +96,13 @@ describe("Reward Pool", () => {
       );
     });
 
+    it("Should have zero rewardRate,currentReward and historicalRewards 0 before update", async () => {
+      const { rewardPool } = await fixture();
+      expect(await rewardPool.currentRewards()).to.equal(0);
+      expect(await rewardPool.rewardRate()).to.equal(0);
+      expect(await rewardPool.historicalRewards()).to.equal(0);
+    });
+
     describe("Staking prMagic in reward pool", () => {
       it("Staking prMagic token to reward pool by users", async () => {
         const { alice, bob, rewardPool, prMagicToken } = await fixture();
@@ -134,7 +140,7 @@ describe("Reward Pool", () => {
       });
     });
 
-    describe("Withdrawing prMAgic from reward pool", () => {
+    describe("Withdrawing prMAgic from reward pool ", () => {
       const withdrawnAmount = stakedAmount.div(10); //100 withdrawn amont
       const fixtureAfterStaking = deployments.createFixture(async () => {
         const baseFixture = await fixture();
@@ -167,80 +173,134 @@ describe("Reward Pool", () => {
         return { magicBalancePost, magicBalancePre };
       };
 
-      it("withdrawing consecutively prMagic token from reward pool by users without claiming", async () => {
-        const { alice, rewardPool, magicToken } = await fixtureAfterStaking();
-        const claimReward = false;
-        const { magicBalancePost, magicBalancePre } = await checkWithdraw(
-          rewardPool,
-          alice,
-          magicToken,
-          claimReward
-        );
-        expect(magicBalancePost).to.equal(magicBalancePre);
-        // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
-        await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be.reverted;
-      });
-
-      it("withdrawing consecutively prMagic token from reward pool by users with claiming", async () => {
-        const { alice, rewardPool, magicToken } = await fixtureAfterStaking();
-        const claimReward = true;
-        const { magicBalancePost, magicBalancePre } = await checkWithdraw(
-          rewardPool,
-          alice,
-          magicToken,
-          claimReward
-        );
-        expect(magicBalancePost).to.gte(magicBalancePre);
-        // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
-        await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be.reverted;
-      });
-
-      describe("Geting reward ", () => {
-        it("Geting reward  from reward pool by users without donating by anyone", async () => {
-          const { alice, rewardPool, magicToken } = await fixtureAfterStaking();
-          const magicBalancePre = await magicToken.balanceOf(alice.address);
-          const rewardEvents = await (
-            await (await rewardPool.connect(alice).getReward(alice.address)).wait()
-          ).events;
-          // @ts-ignore
-          const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
-          const magicBalancePost = await magicToken.balanceOf(alice.address);
-          expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
-          // get reward as 0.0000000000000something  amount
-          await expect(await rewardPool.connect(alice).getReward(alice.address)).to.emit(
+      describe("Before earmark rewards", () => {
+        it("withdrawing consecutively prMagic token from reward pool by users without claiming", async () => {
+          const { alice, rewardPool, magicToken, prMagicToken } = await fixtureAfterStaking();
+          const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+          const claimReward = false;
+          const { magicBalancePost, magicBalancePre } = await checkWithdraw(
             rewardPool,
-            "RewardPaid"
+            alice,
+            magicToken,
+            claimReward
           );
-          const magicBalancePostAfterReward = await magicToken.balanceOf(alice.address);
-          expect(magicBalancePostAfterReward).to.gte(magicBalancePost);
+          const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+          expect(magicBalancePost).to.equal(magicBalancePre);
+          expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+          // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+          await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+            .reverted;
         });
 
-        it("Geting reward  from reward pool  by users with donating ", async () => {
-          const { alice, carol, bob, rewardPool, magicToken, magicDepositor } =
-            await fixtureAfterStaking();
-          const bobMagicBal = await magicToken.balanceOf(bob.address);
-          const rewardPoolMagicBalPre = await magicToken.balanceOf(rewardPool.address);
-          await magicToken.connect(bob).approve(rewardPool.address, bobMagicBal);
-          await rewardPool.connect(bob).donate(bobMagicBal);
-          const queuedRewards = await rewardPool.queuedRewards();
-          const rewardPoolMagicBalPost = await magicToken.balanceOf(rewardPool.address);
-          expect(queuedRewards).to.equal(bobMagicBal);
-          expect(rewardPoolMagicBalPost).to.equal(rewardPoolMagicBalPre.add(bobMagicBal));
+        it("withdrawing consecutively prMagic token from reward pool by users with claiming", async () => {
+          const { alice, rewardPool, magicToken, prMagicToken } = await fixtureAfterStaking();
+          const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+          const claimReward = true;
+          const { magicBalancePost, magicBalancePre } = await checkWithdraw(
+            rewardPool,
+            alice,
+            magicToken,
+            claimReward
+          );
+          const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+          //no reward in RewardPool yet ,that's why we have same magicBalance
+          expect(magicBalancePost).to.equal(magicBalancePre);
+          expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+          // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+          await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+            .reverted;
+        });
+      });
 
-          // earmarking reward from magicDepositor
+      describe("After earmark rewards", () => {
+        const fixtureAfterRewardEarmarked = deployments.createFixture(async () => {
+          const fixtureEarmarked = await fixtureAfterStaking();
+          const { magicDepositor } = fixtureEarmarked;
+          await magicDepositor.update();
+          return { ...fixtureEarmarked };
+        });
+        it("withdrawing consecutively prMagic token from reward pool by users without claiming", async () => {
+          const { alice, rewardPool, magicToken, prMagicToken } =
+            await fixtureAfterRewardEarmarked();
+          const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+          const claimReward = false;
+          const { magicBalancePost, magicBalancePre } = await checkWithdraw(
+            rewardPool,
+            alice,
+            magicToken,
+            claimReward
+          );
+          const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+          expect(magicBalancePost).to.equal(magicBalancePre);
+          expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+          // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+          await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+            .reverted;
+        });
 
-          await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
-          await expect(
-            depositMagicInGuild(carol, magicToken, magicDepositor, ONE_MAGIC_BN)
-          ).to.emit(rewardPool, "RewardAdded");
-          const magicBalancePre = await magicToken.balanceOf(alice.address);
-          const rewardEvents = await (
-            await (await rewardPool.connect(alice).getReward(alice.address)).wait()
-          ).events;
-          // @ts-ignore
-          const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
-          const magicBalancePost = await magicToken.balanceOf(alice.address);
-          expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
+        it("withdrawing consecutively prMagic token from reward pool by users with claiming", async () => {
+          const { alice, rewardPool, magicToken, prMagicToken } =
+            await fixtureAfterRewardEarmarked();
+          const prTokenBalancePre = await prMagicToken.balanceOf(alice.address);
+          const claimReward = true;
+          const { magicBalancePost, magicBalancePre } = await checkWithdraw(
+            rewardPool,
+            alice,
+            magicToken,
+            claimReward
+          );
+          const prTokenBalancePost = await prMagicToken.balanceOf(alice.address);
+          expect(magicBalancePost).to.gt(magicBalancePre);
+          expect(prTokenBalancePost).to.equal(prTokenBalancePre.add(stakedAmount));
+          // Can't withdraw now by alice because now 0 staked amount of alice in the pool contract
+          await expect(rewardPool.connect(alice).withdraw(stakedAmount, claimReward)).to.be
+            .reverted;
+        });
+        describe("Geting reward ", () => {
+          it("Geting reward  from reward pool by users without donating by anyone", async () => {
+            const { alice, rewardPool, magicToken } = await fixtureAfterRewardEarmarked();
+            const magicBalancePre = await magicToken.balanceOf(alice.address);
+            const rewardEvents = (
+              await (await rewardPool.connect(alice).getReward(alice.address)).wait()
+            ).events;
+            // @ts-ignore
+            const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
+            const magicBalancePost = await magicToken.balanceOf(alice.address);
+            expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
+            // get reward as 0.0000000000000something  amount
+            await expect(await rewardPool.connect(alice).getReward(alice.address)).to.emit(
+              rewardPool,
+              "RewardPaid"
+            );
+            const magicBalancePostAfterReward = await magicToken.balanceOf(alice.address);
+            expect(magicBalancePostAfterReward).to.gte(magicBalancePost);
+          });
+
+          it("Geting reward  from reward pool  by users with donating ", async () => {
+            const { alice, carol, bob, rewardPool, magicToken, magicDepositor } =
+              await fixtureAfterStaking();
+            const bobMagicBal = await magicToken.balanceOf(bob.address);
+            const rewardPoolMagicBalPre = await magicToken.balanceOf(rewardPool.address);
+            await magicToken.connect(bob).approve(rewardPool.address, bobMagicBal);
+            await rewardPool.connect(bob).donate(bobMagicBal);
+            const queuedRewards = await rewardPool.queuedRewards();
+            const rewardPoolMagicBalPost = await magicToken.balanceOf(rewardPool.address);
+            expect(queuedRewards).to.equal(bobMagicBal);
+            expect(rewardPoolMagicBalPost).to.equal(rewardPoolMagicBalPre.add(bobMagicBal));
+
+            // earmarking reward from magicDepositor
+
+            await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
+            await expect(magicDepositor.update()).to.emit(rewardPool, "RewardAdded");
+            const magicBalancePre = await magicToken.balanceOf(alice.address);
+            const rewardEvents = (
+              await (await rewardPool.connect(alice).getReward(alice.address)).wait()
+            ).events;
+            // @ts-ignore
+            const rewardEarned = rewardEvents[rewardEvents.length - 1].args["reward"];
+            const magicBalancePost = await magicToken.balanceOf(alice.address);
+            expect(magicBalancePost).to.equal(magicBalancePre.add(rewardEarned));
+          });
         });
       });
     });
