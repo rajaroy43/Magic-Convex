@@ -45,7 +45,12 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @param from Address of user that deposits Magic tokens
     /// @param to Address of user that receives prMagic tokens
     /// @param amount Amount of deposit
-    event DepositFor(address indexed from, address indexed to, uint256 amount);
+    event DepositFor(
+        address indexed from,
+        address indexed to,
+        uint256 indexed atlasDepositIndex,
+        uint256 amount
+    );
 
     /// @notice Event for activating a deposit
     /// @param atlasDepositIndex Index of the deposit
@@ -157,7 +162,7 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
         _checkCurrentDeposit().increaseMagic(amount, to);
         magic.safeTransferFrom(msg.sender, address(this), amount);
 
-        emit DepositFor(msg.sender, to, amount);
+        emit DepositFor(msg.sender, to, currentAtlasDepositIndex, amount);
     }
 
     /// @dev Withdraw unlocked deposit, Harvest rewards for all deposits, Disperse rewards

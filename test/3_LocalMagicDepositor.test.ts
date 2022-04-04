@@ -71,7 +71,10 @@ describe("Local - MagicDepositor", () => {
 
         // First ever user deposit
         {
-          await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address);
+          const currentAtlasDepositIndex = await magicDepositor.currentAtlasDepositIndex();
+          await expect(magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address))
+            .to.emit(magicDepositor, "DepositFor")
+            .withArgs(alice.address, alice.address, currentAtlasDepositIndex.add(1), ONE_MAGIC_BN);
 
           expect((await magicDepositor.atlasDeposits(0)).activationTimestamp).to.be.equal(0); // Deposits should start at index 1
 
@@ -92,7 +95,11 @@ describe("Local - MagicDepositor", () => {
           await magicToken
             .connect(bob)
             .approve(magicDepositor.address, ethers.constants.MaxUint256);
-          await magicDepositor.connect(bob).depositFor(ONE_MAGIC_BN.mul(2), bob.address);
+          const currentAtlasDepositIndex = await magicDepositor.currentAtlasDepositIndex();
+
+          await expect(magicDepositor.connect(bob).depositFor(ONE_MAGIC_BN.mul(2), bob.address))
+            .to.emit(magicDepositor, "DepositFor")
+            .withArgs(bob.address, bob.address, currentAtlasDepositIndex, ONE_MAGIC_BN.mul(2));
 
           expect((await magicDepositor.atlasDeposits(2)).activationTimestamp).to.be.equal(0);
 
