@@ -9,9 +9,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   } = hre;
   const { deployer } = await getNamedAccounts();
 
-  const { address } = await deploy(PR_MAGIC_TOKEN_CONTRACT_NAME, { from: deployer});
-  if(hre.tracer)
-  hre.tracer.nameTags[address] = "prMagicToken";
+  const { address } = await deploy(PR_MAGIC_TOKEN_CONTRACT_NAME, { from: deployer });
+  if (hre.tracer) hre.tracer.nameTags[address] = "prMagicToken";
 };
 export default func;
-func.tags = ["prMagicToken","live"];
+func.tags = ["prMagicToken", "live"];

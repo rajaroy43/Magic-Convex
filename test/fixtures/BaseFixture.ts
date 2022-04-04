@@ -28,8 +28,7 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
   const treasure = IERC1155__factory.connect(TREASURE_NFT_ADDRESS, alice);
   const legion = IERC721__factory.connect(LEGION_NFT_ADDRESS, alice);
   const rewardPool = RewardPool__factory.connect(rewardPoolAddress, alice);
-  const [stakeRewardSplit, treasurySplit, treasuryAddress, stakingAddress] =
-    await magicDepositor.getConfig();
+  const [stakeRewardSplit, treasuryAddress, stakingAddress] = await magicDepositor.getConfig();
 
   const split = await magicToken
     .balanceOf(alice.address)
@@ -54,7 +53,6 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     prMagicToken,
     magicDepositor,
     stakeRewardSplit,
-    treasurySplit,
     treasuryAddress,
     stakingAddress,
     treasure,

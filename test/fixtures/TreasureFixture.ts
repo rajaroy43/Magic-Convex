@@ -83,7 +83,6 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
   const PrMagicToken = await ethers.getContractFactory("prMagicToken");
   const prMagicToken = <PrMagicToken>await PrMagicToken.deploy();
 
-
   const MagicDepositor = await ethers.getContractFactory("MagicDepositor");
   const magicDepositor = <MagicDepositor>(
     await upgrades.deployProxy(MagicDepositor, [
@@ -103,14 +102,12 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
 
   await magicDepositor.setConfig(
     MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.rewards,
-    MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.treasury,
     deployer,
     rewardPool.address
   );
   await prMagicToken.transferOwnership(magicDepositor.address).then((tx) => tx.wait());
 
-  const [stakeRewardSplit, treasurySplit, treasuryAddress, stakingAddress] =
-    await magicDepositor.getConfig();
+  const [stakeRewardSplit, treasuryAddress, stakingAddress] = await magicDepositor.getConfig();
 
   await magicToken.approve(magicDepositor.address, ethers.constants.MaxUint256);
   await magicToken.approve(rewardPool.address, ethers.constants.MaxUint256);
@@ -126,7 +123,6 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     prMagicToken,
     magicDepositor,
     stakeRewardSplit,
-    treasurySplit,
     treasuryAddress,
     stakingAddress,
     rewardPool,

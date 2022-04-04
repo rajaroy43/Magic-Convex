@@ -4,37 +4,32 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract MagicDepositorConfig is OwnableUpgradeable {
-    event UpdatedConfiguration(
-        uint256 stakeRewardSplit,
-        uint256 treasurySplit,
-        address treasury,
-        address staking
-    );
+    event UpdatedConfiguration(uint256 stakeRewardSplit, address treasury, address staking);
+
+    /** Constants */
+    uint256 private constant PRECISION = 1e18;
 
     /** Config variables */
-    uint128 internal stakeRewardSplit; // Proportion of harvest that is going to stake rewards
-    uint128 internal treasurySplit; // Proportion of harvest that goes to the treasury
+    uint256 internal stakeRewardSplit; // Proportion of harvest that is going to stake rewards, the remaing is got to treasury
     address internal treasury; // Address of the treasury
     address internal staking; // Address of the staking contract
 
     /** ACCESS-CONTROLLED FUNCTIONS */
 
     function setConfig(
-        uint128 _stakeRewardSplit,
-        uint128 _treasurySplit,
+        uint256 _stakeRewardSplit,
         address _treasury,
         address _staking
     ) external onlyOwner {
-        require(_stakeRewardSplit + _treasurySplit <= 1 ether, "Invalid split config");
+        require(_stakeRewardSplit <= PRECISION, "Invalid split config");
         require(_treasury != address(0), "Invalid treasury addr");
         require(_staking != address(0), "Invalid staking addr");
 
         stakeRewardSplit = _stakeRewardSplit;
-        treasurySplit = _treasurySplit;
         treasury = _treasury;
         staking = _staking;
 
-        emit UpdatedConfiguration(_stakeRewardSplit, _treasurySplit, _treasury, _staking);
+        emit UpdatedConfiguration(_stakeRewardSplit, _treasury, _staking);
     }
 
     /** VIEW FUNCTIONS */
@@ -43,12 +38,11 @@ contract MagicDepositorConfig is OwnableUpgradeable {
         external
         view
         returns (
-            uint128,
-            uint128,
+            uint256,
             address,
             address
         )
     {
-        return (stakeRewardSplit, treasurySplit, treasury, staking);
+        return (stakeRewardSplit, treasury, staking);
     }
 }

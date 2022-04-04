@@ -34,8 +34,6 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     uint256 public currentAtlasDepositIndex;
     /// @notice // Accumulated magic through harvest that is going to be recompounded on the next atlasDeposit
     uint256 public harvestForNextDeposit;
-    /// @notice // Internal accounting that determines the amount of shares to mint on each atlasDeposit operation
-    uint256 public heldMagic;
 
     /// @notice Event for claiming prMagic for activated deposits
     /// @param user Address of user claiming prMagic
@@ -53,12 +51,10 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @param atlasDepositIndex Index of the deposit
     /// @param depositAmount The amount of Magic token deposited into AtlasMine
     /// @param accumulatedMagic The amount of Magic token deposited during the epoch
-    /// @param mintedShares The amount prMagic minted for the epoch
     event ActivateDeposit(
         uint256 indexed atlasDepositIndex,
         uint256 depositAmount,
-        uint256 accumulatedMagic,
-        uint256 mintedShares
+        uint256 accumulatedMagic
     );
 
     /// @notice Event for dispersing rewards to the staking and treasury
@@ -104,11 +100,10 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
         returns (uint256)
     {
         AtlasDeposit storage atlasDeposit = atlasDeposits[atlasDepositIndex];
-        require(atlasDeposit.exists, "Deposit does not exist");
+        require(atlasDeposit.activationTimestamp > 0, "Deposit does not exist");
         require(atlasDeposit.isActive, "Deposit has not been activated yet");
 
-        uint256 claim = (atlasDeposit.depositedMagicPerAddress[msg.sender] *
-            atlasDeposit.mintedShares) / atlasDeposit.accumulatedMagic;
+        uint256 claim = atlasDeposit.depositedMagicPerAddress[msg.sender];
         require(claim > 0, "Nothing to claim");
 
         atlasDeposit.depositedMagicPerAddress[msg.sender] = 0;
@@ -126,8 +121,15 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
 
     /// @notice Withdraw unlocked deposit, Harvest rewards for all deposits, Disperse rewards
     function update() external override {
+        require(atlasMine.unlockAll() == false, "locked");
         _updateAtlasDeposits();
         _checkCurrentDeposit();
+    }
+
+    /// @notice Withdraw and harvest all deposit and keep in the contract
+    function withdrawAndHarvestAll() external override {
+        require(atlasMine.unlockAll(), "not unlocked");
+        atlasMine.withdrawAndHarvestAll();
     }
 
     /** VIEW FUNCTIONS */
@@ -150,6 +152,7 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     function _depositFor(uint256 amount, address to) internal {
         require(amount > 0, "amount cannot be 0");
         require(to != address(0), "cannot deposit for 0x0");
+        require(atlasMine.unlockAll() == false, "locked");
 
         _checkCurrentDeposit().increaseMagic(amount, to);
         magic.safeTransferFrom(msg.sender, address(this), amount);
@@ -160,22 +163,20 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @dev Withdraw unlocked deposit, Harvest rewards for all deposits, Disperse rewards
     function _updateAtlasDeposits() internal {
         uint256 withdrawnAmount = _withdraw(); // Need to check this first so that deposits are removed on the harvest call @ mine
+        harvestForNextDeposit += withdrawnAmount;
+
         uint256 harvestedAmount = _harvest();
         uint256 stakeRewardIncrement = (harvestedAmount * stakeRewardSplit) / PRECISION;
-        uint256 treasuryIncrement = (harvestedAmount * treasurySplit) / PRECISION;
-        uint256 heldMagicIncrement = harvestedAmount - stakeRewardIncrement - treasuryIncrement;
+        uint256 treasuryIncrement = harvestedAmount - stakeRewardIncrement;
 
         _earmarkRewards(stakeRewardIncrement, treasuryIncrement);
-        heldMagic += heldMagicIncrement;
-
-        harvestForNextDeposit += withdrawnAmount + heldMagicIncrement;
     }
 
     /// @dev Init the current deposit if not exist. Check the current deposit and if it can be active
     /// deposit the Magic tokens to the AltasMine and start a new deposit
     function _checkCurrentDeposit() internal returns (AtlasDeposit storage) {
         AtlasDeposit storage atlasDeposit = atlasDeposits[currentAtlasDepositIndex];
-        if (!atlasDeposit.exists) return _initializeNewAtlasDeposit();
+        if (atlasDeposit.activationTimestamp == 0) return _initializeNewAtlasDeposit();
         if (!atlasDeposit.isActive && atlasDeposit.canBeActivated()) {
             _activateDeposit(atlasDeposit);
             return _initializeNewAtlasDeposit();
@@ -213,7 +214,6 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @dev Init a new deposit. The activiation timestamp is determined here.
     function _initializeNewAtlasDeposit() internal returns (AtlasDeposit storage atlasDeposit) {
         atlasDeposit = atlasDeposits[++currentAtlasDepositIndex];
-        atlasDeposit.exists = true;
         atlasDeposit.activationTimestamp = block.timestamp + ONE_WEEK;
         return atlasDeposit;
     }
@@ -225,28 +225,14 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
         atlasDeposit.isActive = true;
         uint256 accumulatedMagic = atlasDeposit.accumulatedMagic;
 
-        uint256 totalExistingShares = prMagic.totalSupply();
-
-        uint256 mintedShares = totalExistingShares > 0
-            ? (accumulatedMagic * prMagic.totalSupply()) / heldMagic
-            : accumulatedMagic;
-
-        atlasDeposit.mintedShares = mintedShares;
-        heldMagic += accumulatedMagic;
-
-        prMagic.mint(address(this), mintedShares);
+        prMagic.mint(address(this), accumulatedMagic);
 
         uint256 depositAmount = accumulatedMagic + harvestForNextDeposit;
         magic.approve(address(atlasMine), depositAmount);
         harvestForNextDeposit = 0;
         atlasMine.deposit(depositAmount, LOCK_FOR_TWELVE_MONTH);
 
-        emit ActivateDeposit(
-            currentAtlasDepositIndex,
-            depositAmount,
-            accumulatedMagic,
-            mintedShares
-        );
+        emit ActivateDeposit(currentAtlasDepositIndex, depositAmount, accumulatedMagic);
     }
 
     /// @dev Disperse stakedRewards and treasuryRewards to reward contracts

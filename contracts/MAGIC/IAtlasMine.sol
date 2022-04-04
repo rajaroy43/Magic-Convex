@@ -10,6 +10,8 @@ interface IAtlasMine {
 
     function withdrawPosition(uint256 _depositId, uint256 _amount) external returns (bool);
 
+    function withdrawAndHarvestAll() external;
+
     function userInfo(address, uint256)
         external
         returns (
@@ -29,4 +31,6 @@ interface IAtlasMine {
     function stakeLegion(uint256 _tokenId) external;
 
     function unstakeLegion(uint256 _tokenId) external;
+
+    function unlockAll() external returns (bool);
 }

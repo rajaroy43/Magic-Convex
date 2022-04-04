@@ -29,15 +29,12 @@ describe("MagicDepositor", () => {
     isUpdate
       ? expect(atlasDeposit.accumulatedMagic).to.equal(0)
       : expect(atlasDeposit.accumulatedMagic).to.be.gt(0);
-    expect(atlasDeposit.mintedShares).to.be.equal(0);
-    expect(atlasDeposit.exists).to.be.equal(true);
     expect(atlasDeposit.isActive).to.be.equal(false);
   }
 
   function checkAtlasDepositHasBeenActivated(atlasDeposit: any) {
-    expect(atlasDeposit.exists).to.be.equal(true);
+    expect(atlasDeposit.activationTimestamp).to.be.gt(0);
     expect(atlasDeposit.isActive).to.be.equal(true);
-    expect(atlasDeposit.mintedShares).to.be.gt(0);
   }
 
   before("tags", async () => {
@@ -68,7 +65,7 @@ describe("MagicDepositor", () => {
         {
           await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address);
 
-          expect((await magicDepositor.atlasDeposits(0)).exists).to.be.equal(false); // Deposits should start at index 1
+          expect((await magicDepositor.atlasDeposits(0)).activationTimestamp).to.be.equal(0); // Deposits should start at index 1
 
           const atlasDeposit = await magicDepositor.atlasDeposits(1);
           const { activationTimestamp, accumulatedMagic } = atlasDeposit;
@@ -89,16 +86,13 @@ describe("MagicDepositor", () => {
             .approve(magicDepositor.address, ethers.constants.MaxUint256);
           await magicDepositor.connect(bob).depositFor(ONE_MAGIC_BN.mul(2), bob.address);
 
-          expect((await magicDepositor.atlasDeposits(2)).exists).to.be.equal(false);
+          expect((await magicDepositor.atlasDeposits(2)).activationTimestamp).to.be.equal(0);
 
           const atlasDeposit = await magicDepositor.atlasDeposits(1);
-          const { activationTimestamp, accumulatedMagic, mintedShares, exists, isActive } =
-            atlasDeposit;
+          const { activationTimestamp, accumulatedMagic, isActive } = atlasDeposit;
 
           expect(activationTimestamp).to.be.eq(_activationTimestamp);
           expect(accumulatedMagic).to.be.equal(ONE_MAGIC_BN.mul(3));
-          expect(mintedShares).to.be.equal(0);
-          expect(exists).to.be.equal(true);
           expect(isActive).to.be.equal(false);
           expect(await magicToken.balanceOf(magicDepositor.address)).to.be.equal(
             ONE_MAGIC_BN.mul(3)
@@ -110,13 +104,10 @@ describe("MagicDepositor", () => {
           await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address);
 
           const atlasDeposit = await magicDepositor.atlasDeposits(1);
-          const { activationTimestamp, accumulatedMagic, mintedShares, exists, isActive } =
-            atlasDeposit;
+          const { activationTimestamp, accumulatedMagic, isActive } = atlasDeposit;
 
           expect(activationTimestamp).to.be.equal(_activationTimestamp);
           expect(accumulatedMagic).to.be.equal(ONE_MAGIC_BN.mul(4));
-          expect(mintedShares).to.be.equal(0);
-          expect(exists).to.be.equal(true);
           expect(isActive).to.be.equal(false);
           expect(await magicToken.balanceOf(magicDepositor.address)).to.be.equal(
             ONE_MAGIC_BN.mul(4)
@@ -178,14 +169,8 @@ describe("MagicDepositor", () => {
 
         await timeAndMine.increaseTime(ONE_DAY_IN_SECONDS);
 
-        const [
-          magicBalancePre,
-          internalMagicAccountingPre,
-          magicBalanceOfRewardPoolPre,
-          aliceMagicBalancePre,
-        ] = await Promise.all([
+        const [magicBalancePre, magicBalanceOfRewardPoolPre] = await Promise.all([
           magicToken.balanceOf(magicDepositor.address),
-          magicDepositor.heldMagic(),
           magicToken.balanceOf(rewardPool.address),
           magicToken.balanceOf(alice.address),
         ]);
@@ -194,13 +179,11 @@ describe("MagicDepositor", () => {
 
         const [
           magicBalancePost,
-          internalMagicAccountingPost,
           compoundedMagic,
           magicBalanceOfRewardPoolPost,
           aliceMagicBalancePost,
         ] = await Promise.all([
           magicToken.balanceOf(magicDepositor.address),
-          magicDepositor.heldMagic(),
           magicDepositor.harvestForNextDeposit(),
           magicToken.balanceOf(rewardPool.address),
           magicToken.balanceOf(alice.address),
@@ -215,8 +198,6 @@ describe("MagicDepositor", () => {
         // so stakeRewardIncrement is 388536502000912 instead of 388536502000912.5
         //same with treasuryIncrement , then after we will subtract it we will get 1 as heldMagicIncrement
         expect(magicBalancePost).to.gte(magicBalancePre.add(depositAmount));
-        // Its (heldMagicIncrement) zero now because 50% for stakeRewards and 50% for treasury
-        expect(internalMagicAccountingPost).to.be.gte(internalMagicAccountingPre);
 
         const expectedCompoundedMagic = magicBalancePost.sub(magicBalancePre).sub(depositAmount);
         expect(expectedCompoundedMagic).to.gte(compoundedMagic);
@@ -271,7 +252,7 @@ describe("MagicDepositor", () => {
             magicDepositor.atlasDeposits(4),
           ]);
 
-        expect(fourthAtlasDeposit.exists).to.be.equal(false);
+        expect(fourthAtlasDeposit.activationTimestamp).to.be.equal(0);
         checkAtlasDepositHasBeenActivated(firstAtlasDeposit);
         checkAtlasDepositHasBeenActivated(secondAtlasDeposit);
         checkAtlasDepositHasBeenInitialized(thirdAtlasDeposit);
@@ -334,18 +315,16 @@ describe("MagicDepositor", () => {
         const tx = await magicDepositor.update();
         await expect(tx)
           .to.emit(atlasMine, "Withdraw")
-          .withArgs(magicDepositor.address, 1, depositAmount)
+          .withArgs(magicDepositor.address, 1, depositAmount);
 
-        expect(tx).to.emit(magicDepositor,"ActivateDeposit")
-
+        expect(tx).to.emit(magicDepositor, "ActivateDeposit");
 
         // Expect the first deposit amount to be relocked
 
         const { logs } = await awaitTx(tx);
 
-        const log = logs.find( 
-          ({ topics }) =>
-            topics[0] === ethers.utils.id("Deposit(address,uint256,uint256,uint8)")
+        const log = logs.find(
+          ({ topics }) => topics[0] === ethers.utils.id("Deposit(address,uint256,uint256,uint8)")
         );
         if (!log) throw new Error(`Deposit event was not emitted`);
         const {

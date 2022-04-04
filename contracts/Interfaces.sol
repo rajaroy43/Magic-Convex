@@ -24,6 +24,8 @@ interface IMagicDepositor {
 
     function update() external;
 
+    function withdrawAndHarvestAll() external;
+
     function getUserDepositedMagic(uint256 atlasDepositId, address user)
         external
         view

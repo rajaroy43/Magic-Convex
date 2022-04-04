@@ -28,13 +28,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   await MagicDepositor__factory.connect(magicDepositorAddress, signer).setConfig(
     MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.rewards,
-    MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG.treasury,
     deployer,
     rewardPoolAddress
   );
-  if(hre.tracer)
-  hre.tracer.nameTags[rewardPoolAddress] = "RewardPool";
+  if (hre.tracer) hre.tracer.nameTags[rewardPoolAddress] = "RewardPool";
 };
 
 export default func;
-func.tags = ["RewardPool","live"];
+func.tags = ["RewardPool", "live"];
