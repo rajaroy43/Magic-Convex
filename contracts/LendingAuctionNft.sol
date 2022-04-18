@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
-import {IMagicDepositor,IMagicNftDepositor} from "./Interfaces.sol";
+import {IMagicNftDepositor} from "./Interfaces.sol";
 import "./MAGIC/IAtlasMine.sol";
 
 contract LendingAuctionNft is Initializable, OwnableUpgradeable{
@@ -31,6 +31,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         //Legion Nft to total Staked
         EnumerableSetUpgradeable.UintSet  deposits;
         UserBoost[] userBoosts;//All added boost
+        mapping (uint256 => uint256) userIndex;
     } 
 
     struct TreasurePool{
@@ -39,16 +40,24 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         //  tokenId => total Staked Treasure
         // mapping(uint256 => uint256) stakedTreasurePerTokenId;
         UserBoost[] userBoosts;//All added boost
+        // user => tokenId => stakedAmount
+        mapping (address => mapping(uint256=> uint256)) stakedPerToken;
+        // user => tokenId => amount => Index []
+        mapping (address => mapping(uint256 => mapping(uint256 =>uint256[]))) userIndex;
     }
 
     LegionPool legionMainPool;
     LegionPool  legionReservePool;
     TreasurePool  treasureMainPool;
     TreasurePool  treasureReservePool;
+    enum WhichPool {None, LegionMainPool,LegionReservePool,TreasureMainPool,TreasureReservePool}
+    // User => TokenId => WhichPool
+    mapping(address => mapping(uint256 => WhichPool)) isPool;
     
     // EVENTS
 
     event Deposit(address nft, uint256 tokenId, uint256 amount);
+    event Withdrawn(address nft, uint256 tokenId, uint256 amount);
 
 
     function initialize(
@@ -71,6 +80,42 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         emit Deposit(legion, tokenId, 1);
     }
 
+    function withdrawLegion(uint256 tokenId) external   {
+        require(legion != address(0), "Cannot Withdraw Legion");
+        WhichPool whichPool = isPool[msg.sender][tokenId];
+        require(whichPool == WhichPool.LegionMainPool || whichPool == WhichPool.LegionReservePool,"No pool assoicated with token id");
+        if(whichPool == WhichPool.LegionMainPool){
+            _withdrawLegionFromPool(legionMainPool,msg.sender,tokenId);
+            // Unstake by magicDepositor
+            magicDepositor.unStakeLegion(tokenId);
+            // transfer nft token id to user address
+            IERC721Upgradeable(legion).transferFrom(address(this),msg.sender, tokenId);
+            uint256 len = legionReservePool.userBoosts.length;
+            if(len !=0 ){
+                // Getting maximum boost in legion reserve pool
+                UserBoost[] memory  userBoosts = legionReservePool.userBoosts;
+                uint256 index = _getHigherExistingBoost(userBoosts);
+
+                //Remove highest rarity user from reservePool    
+                
+                UserBoost memory  reservePoolUserBoost = _removeLegionFromPool(legionReservePool,index);
+                uint256 addingTokenId = reservePoolUserBoost.tokenId;
+                
+                //Add above userBoost in mainPool
+
+                IERC721Upgradeable(legion).transferFrom(address(this), address(magicDepositor), addingTokenId);
+                magicDepositor.stakeLegion(addingTokenId); 
+                _addLegion(legionMainPool,reservePoolUserBoost, WhichPool.LegionMainPool);
+            } 
+        } 
+        else {
+            _withdrawLegionFromPool(legionReservePool,msg.sender,tokenId);
+            // transfer nft token id to user address
+            IERC721Upgradeable(legion).transferFrom(address(this),msg.sender, tokenId);
+        } 
+        emit Withdrawn(legion, tokenId, 1);
+    }
+
     function depositTreasures(uint256 tokenId,uint256 amount) external   {
         require(treasure != address(0), "Cannot deposit Treasure");
         require(amount > 0, "Amount is 0");
@@ -79,142 +124,259 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         amount = amount >  leftTreasureInMainPool ? leftTreasureInMainPool : amount ;
        _depositTreasures(tokenId,amount);
         emit Deposit(treasure, tokenId, amount);
-    } 
+    }
 
+    function withdrawTreasure(uint256 tokenId,uint256 amount) external   {
+        require(treasure != address(0), "Cannot withdraw Treasure");
+        uint256 currReserveAmount = treasureReservePool.stakedPerToken[msg.sender][tokenId];
+        uint256 currMainAmount = treasureMainPool.stakedPerToken[msg.sender][tokenId];
+        if(currReserveAmount >= amount){
+            // withdraw from reserve pool
+            _withdrawTreasureFromPool(treasureReservePool,msg.sender,tokenId,amount);
+            // transfer nft token id to user address
+            IERC1155Upgradeable(treasure).safeTransferFrom(
+                address(this),
+                msg.sender,
+                tokenId,
+                amount,
+                bytes("")
+            );
+        }
+        else if(currMainAmount >= amount){
+            // withdraw from main pool
+            _withdrawTreasureFromPool(treasureMainPool,msg.sender,tokenId,amount);
+            // Unstake by magicDepositor
+            magicDepositor.unStakeTreasure(tokenId,amount);
+            // transfer nft token id to user address
+            IERC1155Upgradeable(treasure).safeTransferFrom(
+                address(this),
+                msg.sender,
+                tokenId,
+                amount,
+                bytes("")
+            );
+            uint256 len = treasureReservePool.userBoosts.length;
+            if(len !=0 ){
+                // Getting maximum boost in treasure reserve pool
+                UserBoost[] memory  userBoosts = treasureReservePool.userBoosts;
+                uint256 index = _getHigherExistingBoost(userBoosts);
+
+                //Remove highest rarity user from reservePool    
+                
+                UserBoost memory  reservePoolUserBoost = _removeTreasureFromPool(treasureReservePool,index);
+
+                uint256 addingTokenId = reservePoolUserBoost.tokenId;
+                uint256 tokenAmount = reservePoolUserBoost.amount;
+                
+                //Add above userBoost in mainPool
+
+                IERC1155Upgradeable(treasure).safeTransferFrom(
+                    address(this),
+                    address(magicDepositor),
+                    addingTokenId,
+                    tokenAmount,
+                    bytes("")
+                );
+                magicDepositor.stakeTreasure(addingTokenId,tokenAmount); 
+                _addTreasure(treasureMainPool,reservePoolUserBoost);
+
+            } 
+        }
+        else{
+            revert("User don't have enough  treasures");
+        }
+
+        emit Withdrawn(treasure, tokenId, amount);
+    }
+ 
 
     function _depositLegion(uint256 _tokenId) internal{
         uint256 nftBoost = _getBoost(legion,_tokenId,1);
         bool isLegion1_1Staked = _checkLegion1Staked();
         if(isLegion1_1Staked){
-            _addToLegionReservePool(_tokenId,nftBoost);
+            _addToLegionPool(_tokenId,nftBoost,WhichPool.LegionReservePool);
             return;
         }
         if(legionMainPoolLength() < 3 ){
-            _addToLegionMainPool(_tokenId,nftBoost);
+            _addToLegionPool(_tokenId,nftBoost,WhichPool.LegionMainPool);
         } 
         else{
-            (bool find,int256 findIndex )= _getHigherExistingBoost(legionMainPool.userBoosts,nftBoost,1);
+            (bool find,int256 findIndex )= _getLowerExistingBoost(legionMainPool.userBoosts,nftBoost,1);
             if(find){
                 // Removing lower rarity legion nft from mainLegionPool
                 UserBoost memory removingUserBoost = _removeLegionFromPool(legionMainPool,uint256(findIndex));
                 
+                uint256 removedTokenId = removingUserBoost.tokenId; 
+                magicDepositor.unStakeLegion(removedTokenId);
+
                 // Adding removed nft , to reserveLegionPool
-                legionReservePool.userBoosts.push(removingUserBoost);
-                legionReservePool.deposits.add(removingUserBoost.tokenId);
-                
+
+                _addLegion(legionReservePool,removingUserBoost, WhichPool.LegionReservePool); 
+
                 // Adding upcomming Higher rarity NFT to mainLegionPool
-                _addToLegionMainPool(_tokenId,nftBoost);
+                _addToLegionPool(_tokenId,nftBoost,WhichPool.LegionMainPool);
             }
             else{
                 // Add Nft to reserve pool
-                _addToLegionReservePool(_tokenId,nftBoost);
+                _addToLegionPool(_tokenId,nftBoost,WhichPool.LegionReservePool);
             }
         }
     }
 
     function _depositTreasures(uint256 _tokenId,uint256 _amount) internal{
-        uint256 nftBoost = _getBoost(legion,_tokenId,_amount);       
+        uint256 nftBoost = _getBoost(treasure,_tokenId,_amount);       
         if(treasureInMainPool() < 20 ){
-            _addToTreasureMainPool(_tokenId,nftBoost,_amount);
+            _addToTreasurePool(_tokenId,nftBoost,_amount,WhichPool.TreasureMainPool);
         }  
         else{
-            (bool find,int256 findIndex) = _getHigherExistingBoost(treasureMainPool.userBoosts,nftBoost,_amount);
+            (bool find,int256 findIndex) = _getLowerExistingBoost(treasureMainPool.userBoosts,nftBoost,_amount);
             if(find){
-                // Removing lower rarity legion nft from mainLegionPool
+                UserBoost[] storage userBoosts  = treasureMainPool.userBoosts;
+                UserBoost memory userBoost = userBoosts[uint256(findIndex)];
+                // address user = userBoost.user;
+                uint256 removedTokenAmount = userBoost.amount;
+                uint256 removedTokenId = userBoost.tokenId;
+
                 UserBoost memory removingUserBoost = _removeTreasureFromPool(treasureMainPool,uint256(findIndex));
-                
+
+                magicDepositor.unStakeTreasure(removedTokenId,removedTokenAmount);
+
                 // Adding removed nft , to reserveLegionPool
-                treasureReservePool.userBoosts.push(removingUserBoost);
-                treasureReservePool.deposits += removingUserBoost.amount;
-                
+                _addTreasure(treasureReservePool,removingUserBoost); 
+
                 // Adding upcomming Higher rarity NFT to mainTreasurePool
-                _addToTreasureMainPool(_tokenId,nftBoost,_amount);
+               _addToTreasurePool(_tokenId,nftBoost,_amount,WhichPool.TreasureMainPool);
             }
             else{
                 // Add Nft to reserve pool
-                _addToTreasureReservePool(_tokenId,nftBoost,_amount);
+                _addToTreasurePool(_tokenId,nftBoost,_amount,WhichPool.TreasureReservePool);
             }
         }
     }
 
 
-    function _addToLegionMainPool(uint256 _tokenId,uint256 _nftBoost) internal{
-        IERC721Upgradeable(legion).transferFrom(msg.sender, address(magicDepositor), _tokenId);
-        magicDepositor.stakeLegion(_tokenId); 
-        _addLegionToPool(legionMainPool,_tokenId,_nftBoost);      
+    function _addToLegionPool(uint256 _tokenId,uint256 _nftBoost,WhichPool whichPool) internal{
+        UserBoost memory userBoost = UserBoost(msg.sender,_nftBoost,block.timestamp,_tokenId,1);
+        if(whichPool == WhichPool.LegionMainPool){
+            IERC721Upgradeable(legion).transferFrom(msg.sender, address(magicDepositor), _tokenId);
+            magicDepositor.stakeLegion(_tokenId); 
+            _addLegion(legionMainPool,userBoost,whichPool);  
+        }
+        else if(whichPool == WhichPool.LegionReservePool){
+            IERC721Upgradeable(legion).transferFrom(msg.sender, address(this), _tokenId);
+            _addLegion(legionReservePool,userBoost,whichPool);  
+        }
+        else{
+            revert("Allowing only MainPool and ReservePool");
+        }    
     }
 
-    function _addToLegionReservePool(uint256 _tokenId,uint256 _nftBoost) internal{
-        IERC721Upgradeable(legion).transferFrom(msg.sender, address(this), _tokenId);
-        _addLegionToPool(legionReservePool,_tokenId,_nftBoost);      
+    function _addToTreasurePool(uint256 _tokenId,uint256 _nftBoost,uint256 _amount,WhichPool whichPool) internal{
+        UserBoost memory userBoost = UserBoost(msg.sender,_nftBoost,block.timestamp,_tokenId,1);
+        if(whichPool == WhichPool.TreasureMainPool){
+            IERC1155Upgradeable(treasure).safeTransferFrom(
+                msg.sender,
+                address(magicDepositor),
+                _tokenId,
+                _amount,
+                bytes("")
+            );
+            magicDepositor.stakeTreasure(_tokenId,_amount); 
+            _addTreasure(treasureMainPool,userBoost);  
+        }
+        else if(whichPool == WhichPool.TreasureReservePool){
+            IERC1155Upgradeable(treasure).safeTransferFrom(
+                msg.sender,
+                address(this),
+                _tokenId,
+                _amount,
+                bytes("")
+            );
+            _addTreasure(treasureReservePool,userBoost);   
+        }
+        else{
+            revert("Allowing only MainPool and ReservePool");
+        }  
     }
 
-     function _addToTreasureMainPool(uint256 _tokenId,uint256 _nftBoost,uint256 _amount) internal{
-        IERC1155Upgradeable(treasure).safeTransferFrom(
-            msg.sender,
-            address(magicDepositor),
-            _tokenId,
-            _amount,
-            bytes("")
-        );
-        magicDepositor.stakeTreasure(_tokenId,_amount); 
-        _addTreasureToPool(treasureMainPool,_tokenId,_nftBoost,_amount);      
+    function _addLegion(LegionPool storage pool,UserBoost memory userBoost,WhichPool whichPool) internal{
+        uint256 tokenId = userBoost.tokenId;
+        address user = userBoost.user;
+
+        pool.userBoosts.push(userBoost);
+        pool.userIndex[tokenId] = pool.userBoosts.length - 1;
+        pool.deposits.add(tokenId);
+        isPool[user][tokenId] = whichPool;
     }
 
-    function _addToTreasureReservePool(uint256 _tokenId,uint256 _nftBoost,uint256 _amount) internal{
-        IERC1155Upgradeable(treasure).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _tokenId,
-            _amount,
-            bytes("")
-        );
-        _addTreasureToPool(treasureReservePool,_tokenId,_nftBoost,_amount);      
+    function _addTreasure(TreasurePool storage pool,UserBoost memory userBoost) internal{
+        uint256 tokenId = userBoost.tokenId;
+        address user = userBoost.user;
+        uint256 amount = userBoost.amount;
+        pool.userBoosts.push(userBoost);
+        uint256 userBoostlength = pool.userBoosts.length-1; 
+        pool.deposits += amount;
+        pool.stakedPerToken[user][tokenId] += amount;
+        pool.userIndex[user][tokenId][amount].push(userBoostlength);
+    }
+
+    function _withdrawLegionFromPool(LegionPool storage legionPool,address user,uint256 _tokenId) internal{
+        uint256 index = legionPool.userIndex[_tokenId];
+        UserBoost storage userBoost  = legionPool.userBoosts[index];
+        require(user == userBoost.user ,"Invalid owner");
+        require(_tokenId == userBoost.tokenId,"Invalid Token Id");
+        // remove legion from mainPool
+        _removeLegionFromPool(legionPool,index);
+        isPool[msg.sender][_tokenId] = WhichPool.None;
+    }
+
+    function _withdrawTreasureFromPool(TreasurePool storage treasurePool,address _user,uint256 _tokenId,uint256 _amount) internal{
+        uint256[] memory indexTreausres = treasurePool.userIndex[_user][_tokenId][_amount];
+        uint256 userBoostIndex = indexTreausres[indexTreausres.length-1];
+
+        UserBoost[] storage userBoosts  = treasurePool.userBoosts;
+
+        UserBoost storage userBoost  = userBoosts[userBoostIndex];
+        require(_user == userBoost.user ,"Invalid owner");
+        require(_tokenId == userBoost.tokenId,"Invalid Token Id");
+        require(_amount == userBoost.amount,"Invalid amount");
+        // remove treasure from mainPool
+        _removeTreasureFromPool(treasurePool,userBoostIndex);
     }
 
     function _removeLegionFromPool(LegionPool storage pool,uint256 _findIndex)internal returns(UserBoost memory removedUserBoost){ 
         UserBoost[] storage userBoosts = pool.userBoosts;
         removedUserBoost = userBoosts[_findIndex];
         uint256 removedTokenId = removedUserBoost.tokenId ;
-        magicDepositor.unStakeLegion(removedTokenId);
         userBoosts[_findIndex] = userBoosts[userBoosts.length - 1];
         userBoosts.pop();
         pool.deposits.remove(removedTokenId);
-        return removedUserBoost;
+        delete pool.userIndex[removedTokenId];
     }
 
-    function _removeTreasureFromPool(TreasurePool storage pool,uint256 _findIndex)internal returns( UserBoost memory removedUserBoost){ 
+    function _removeTreasureFromPool(TreasurePool storage pool,uint256 _indexUserBoost)internal returns( UserBoost memory removedUserBoost){ 
         UserBoost[] storage userBoosts = pool.userBoosts;
-        removedUserBoost = userBoosts[_findIndex];
-        uint256 _tokenId = removedUserBoost.tokenId ;
-        uint256 _amount = removedUserBoost.amount ;
-        magicDepositor.unStakeTreasure(_tokenId,_amount);
-        userBoosts[_findIndex] = userBoosts[userBoosts.length - 1];
+        removedUserBoost = userBoosts[_indexUserBoost];
+        uint256 tokenId = removedUserBoost.tokenId;
+        uint256 amount = removedUserBoost.amount;
+        address user = removedUserBoost.user;
+        userBoosts[_indexUserBoost] = userBoosts[userBoosts.length - 1];
         userBoosts.pop();
-        pool.deposits -= _amount;
-    }
+        pool.deposits -= amount;
+        pool.stakedPerToken[user][tokenId] -= amount;
+        uint256[] storage userIndexes = pool.userIndex[user][tokenId][amount];
+        userIndexes.pop();
+   }
+ 
 
-    function _addLegionToPool(LegionPool storage pool,uint256 _tokenId,uint256 _nftBoost) internal{
-        UserBoost memory userBoost = UserBoost(msg.sender,_nftBoost,block.timestamp,_tokenId,1);
-        pool.userBoosts.push(userBoost);
-        pool.deposits.add(_tokenId);
-    }
-
-    function _addTreasureToPool(TreasurePool storage pool,uint256 _tokenId,uint256 _nftBoost,uint256 _amount) internal{
-        UserBoost memory userBoost = UserBoost(msg.sender,_nftBoost,block.timestamp,_tokenId,_amount);
-        pool.userBoosts.push(userBoost);
-        pool.deposits += _amount;
-    }
-
-    // will return true/false and array index 
+     // will return true/false and array index 
     // true if we find higher boost than existing 
     // false if we don't find higher boost than exiting 
 
-    function _getHigherExistingBoost(UserBoost[] memory userBoosts,uint256 _currentNftBoost,uint256 _currentAmount) internal pure returns(bool,int256 index){
+    function _getLowerExistingBoost(UserBoost[] memory userBoosts,uint256 _currentNftBoost,uint256 _currentAmount) internal pure returns(bool,int256 index){
         uint256 len = userBoosts.length;
         if(len == 0)
         return (false,-1);
-        // require(userBoosts.length == 3,"At least three users");
         uint256  minBoost = userBoosts[0].boost;
         for(uint256 i=0; i< len;i++){
             uint256 currentUserBoost = userBoosts[i].boost;
@@ -238,6 +400,31 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         return (true,index);
         else
         return (false,-1);
+    }
+
+    function _getHigherExistingBoost(UserBoost[] memory userBoosts) internal pure returns(uint256 index){
+        uint256 len = userBoosts.length;
+       
+        uint256  maxBoost = userBoosts[0].boost;
+        for(uint256 i=0; i< len;i++){
+            uint256 currentUserBoost = userBoosts[i].boost;
+            //uint256 currentUserAmount = userBoosts[i].amount;
+            if( maxBoost < currentUserBoost){
+               maxBoost = currentUserBoost;
+               index = i;
+            }
+        }
+        uint256  maxDepositedtime = type(uint256).max;
+        for(uint256 i=0; i< len;i++){
+            if(userBoosts[i].boost == maxBoost){
+                uint256  currentMaxDepositedtime = userBoosts[i].nftDepositedTime;
+                if(maxDepositedtime > currentMaxDepositedtime){
+                    maxDepositedtime = currentMaxDepositedtime;
+                    index = i;
+                }
+            }
+        }
+        return index;
     }
 
     function _getBoost(address _nft,uint256 _tokenId,uint256 _amount) internal view  returns(uint256){
@@ -277,3 +464,4 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         return IERC1155Receiver.onERC1155Received.selector;
     }
 }
+
