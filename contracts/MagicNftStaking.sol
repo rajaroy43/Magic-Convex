@@ -14,6 +14,8 @@ import "./MAGIC/IAtlasMine.sol";
 contract MagicNftStaking is Initializable, OwnableUpgradeable {
     address public treasure; //treasure erc1155 nft in atlasmine
     address public legion; //legion erc721 nft in atlasmine
+    address public lendAuction;
+
 
     IAtlasMine public atlasMine; //AtlasMine contract
 
@@ -40,14 +42,21 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param legion Address of legion contract
     event LegionChanged(address legion);
 
+    modifier onlyLendAuction() {
+        require(msg.sender == lendAuction, "Not lend auction");
+        _;
+    }
+
     function __MagicStaking_init_unchained(
         address _atlasMine,
         address _treasure,
-        address _legion
+        address _legion,
+        address _lendAuction
     ) internal onlyInitializing {
         atlasMine = IAtlasMine(_atlasMine);
         treasure = _treasure;
         legion = _legion;
+        lendAuction = _lendAuction;
         IERC1155(treasure).setApprovalForAll(_atlasMine, true);
         IERC721(legion).setApprovalForAll(_atlasMine, true);
     }
@@ -86,7 +95,7 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param tokenId treasure token id
     /// @param amount amount of tokenId
 
-    function stakeTreasure(uint256 tokenId, uint256 amount) external onlyOwner {
+    function stakeTreasure(uint256 tokenId, uint256 amount) external onlyLendAuction {
         atlasMine.stakeTreasure(tokenId, amount);
     }
 
@@ -94,22 +103,24 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param tokenId treasure token id
     /// @param amount amount of tokenId
 
-    function unStakeTreasure(uint256 tokenId, uint256 amount) external onlyOwner {
+    function unStakeTreasure(uint256 tokenId, uint256 amount) external onlyLendAuction {
         atlasMine.unstakeTreasure(tokenId, amount);
+        IERC1155(treasure).safeTransferFrom(address(this), lendAuction, tokenId, amount, bytes(""));
     }
 
     /// @notice staking legion nft in atlasmine
     /// @param tokenId legion nft token id
 
-    function stakeLegion(uint256 tokenId) external onlyOwner {
-        atlasMine.stakeLegion(tokenId);
+    function stakeLegion(uint256 tokenId) external onlyLendAuction {
+        atlasMine.stakeLegion(tokenId); 
     }
 
     /// @notice unstaking legion nft from atlasmine
     /// @param tokenId legion nft token id
 
-    function unStakeLegion(uint256 tokenId) external onlyOwner {
+    function unStakeLegion(uint256 tokenId) external onlyLendAuction {
         atlasMine.unstakeLegion(tokenId);
+        IERC721(legion).transferFrom(address(this),lendAuction, tokenId);
     }
 
     /// @notice withdrawing any erc1155 nfts
