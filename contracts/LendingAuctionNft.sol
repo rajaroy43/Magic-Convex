@@ -58,30 +58,42 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
 
     event Deposit(address nft, uint256 tokenId, uint256 amount);
     event Withdrawn(address nft, uint256 tokenId, uint256 amount);
+    event MagicDepositorChanged(address magicDepositor);
 
 
     function initialize(
-        address _treasure,address _legion,address _atlasMine,address _magicDepositor
+        address _treasure,address _legion,address _atlasMine
     ) external initializer {
         __Ownable_init_unchained();
         treasure = _treasure;
         legion = _legion;
         atlasmine = IAtlasMine(_atlasMine);
+    }
+
+    /// @notice setting magicDepositor contract
+    /// @param _magicDepositor magicDepositor contract address
+
+    function setMagicDepositor(address _magicDepositor) external onlyOwner {
+        require(_magicDepositor != address(0), "magicDepositor zero address");
+        require(address(magicDepositor) != _magicDepositor, "same magicDepositor address");
         magicDepositor = IMagicNftDepositor(_magicDepositor);
         IERC1155Upgradeable(treasure).setApprovalForAll(_magicDepositor, true);
         IERC721Upgradeable(legion).setApprovalForAll(_magicDepositor, true);
+        emit MagicDepositorChanged(address(magicDepositor));
     }
 
     // Depositing NFT 
 
     function depositLegion(uint256 tokenId) external   {
         require(legion != address(0), "Cannot deposit Legion");
+        require(address(magicDepositor) != address(0),"magicDepositor zero address");
        _depositLegion(tokenId);
         emit Deposit(legion, tokenId, 1);
     }
 
     function withdrawLegion(uint256 tokenId) external   {
         require(legion != address(0), "Cannot Withdraw Legion");
+        require(address(magicDepositor) != address(0),"magicDepositor zero address");
         WhichPool whichPool = isPool[msg.sender][tokenId];
         require(whichPool == WhichPool.LegionMainPool || whichPool == WhichPool.LegionReservePool,"No pool assoicated with token id");
         if(whichPool == WhichPool.LegionMainPool){
