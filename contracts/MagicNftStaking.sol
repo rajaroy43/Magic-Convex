@@ -45,9 +45,10 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
         address _treasure,
         address _legion
     ) internal onlyInitializing {
-        atlasMine = IAtlasMine(_atlasMine);
-        treasure = _treasure;
-        legion = _legion;
+        _setAtlasMine(_atlasMine);
+        _setTreasure(_treasure);
+        _setLegion(_legion);
+
         IERC1155(treasure).setApprovalForAll(_atlasMine, true);
         IERC721(legion).setApprovalForAll(_atlasMine, true);
     }
@@ -56,6 +57,12 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param _atlasMine atlasmine contract address
 
     function setAtlasMine(address _atlasMine) external onlyOwner {
+        _setAtlasMine(_atlasMine);
+    }
+
+    /// @notice setting atlasmine contract
+    /// @param _atlasMine atlasmine contract address
+    function _setAtlasMine(address _atlasMine) private {
         require(_atlasMine != address(0), "atlasmine zero address");
         require(address(atlasMine) != _atlasMine, "same atlasMine address");
         atlasMine = IAtlasMine(_atlasMine);
@@ -66,6 +73,12 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param _treasure treasure contract address
 
     function setTreasure(address _treasure) external onlyOwner {
+        _setTreasure(_treasure);
+    }
+
+    /// @notice setting treasure contract
+    /// @param _treasure treasure contract address
+    function _setTreasure(address _treasure) private {
         require(_treasure != address(0), "treasure zero address");
         require(treasure != _treasure, "same treasure address");
         treasure = _treasure;
@@ -76,6 +89,12 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param _legion legion contract address
 
     function setLegion(address _legion) external onlyOwner {
+        _setLegion(_legion);
+    }
+
+    /// @notice setting legion contract
+    /// @param _legion legion contract address
+    function _setLegion(address _legion) private {
         require(_legion != address(0), "legion zero address");
         require(legion != _legion, "same legion address");
         legion = _legion;
