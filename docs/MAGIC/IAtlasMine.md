@@ -64,6 +64,18 @@ function stakeTreasure(uint256 _tokenId, uint256 _amount) external nonpayable
 | \_tokenId | uint256 | undefined   |
 | \_amount  | uint256 | undefined   |
 
+### unlockAll
+
+```solidity
+function unlockAll() external nonpayable returns (bool)
+```
+
+#### Returns
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| \_0  | bool | undefined   |
+
 ### unstakeLegion
 
 ```solidity
@@ -113,6 +125,12 @@ function userInfo(address, uint256) external nonpayable returns (uint256, uint25
 | \_4  | uint256 | undefined   |
 | \_5  | int256  | undefined   |
 | \_6  | uint8   | undefined   |
+
+### withdrawAndHarvestAll
+
+```solidity
+function withdrawAndHarvestAll() external nonpayable
+```
 
 ### withdrawPosition
 

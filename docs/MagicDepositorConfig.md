@@ -5,7 +5,7 @@
 ### getConfig
 
 ```solidity
-function getConfig() external view returns (uint128, uint128, address, address)
+function getConfig() external view returns (uint256, address, address)
 ```
 
 VIEW FUNCTIONS
@@ -14,10 +14,9 @@ VIEW FUNCTIONS
 
 | Name | Type    | Description |
 | ---- | ------- | ----------- |
-| \_0  | uint128 | undefined   |
-| \_1  | uint128 | undefined   |
+| \_0  | uint256 | undefined   |
+| \_1  | address | undefined   |
 | \_2  | address | undefined   |
-| \_3  | address | undefined   |
 
 ### owner
 
@@ -44,7 +43,7 @@ _Leaves the contract without owner. It will not be possible to call `onlyOwner` 
 ### setConfig
 
 ```solidity
-function setConfig(uint128 _stakeRewardSplit, uint128 _treasurySplit, address _treasury, address _staking) external nonpayable
+function setConfig(uint256 _stakeRewardSplit, address _treasury, address _staking) external nonpayable
 ```
 
 ACCESS-CONTROLLED FUNCTIONS
@@ -53,8 +52,7 @@ ACCESS-CONTROLLED FUNCTIONS
 
 | Name               | Type    | Description |
 | ------------------ | ------- | ----------- |
-| \_stakeRewardSplit | uint128 | undefined   |
-| \_treasurySplit    | uint128 | undefined   |
+| \_stakeRewardSplit | uint256 | undefined   |
 | \_treasury         | address | undefined   |
 | \_staking          | address | undefined   |
 
@@ -90,7 +88,7 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 ### UpdatedConfiguration
 
 ```solidity
-event UpdatedConfiguration(uint256 stakeRewardSplit, uint256 treasurySplit, address treasury, address staking)
+event UpdatedConfiguration(uint256 stakeRewardSplit, address treasury, address staking)
 ```
 
 #### Parameters
@@ -98,6 +96,5 @@ event UpdatedConfiguration(uint256 stakeRewardSplit, uint256 treasurySplit, addr
 | Name             | Type    | Description |
 | ---------------- | ------- | ----------- |
 | stakeRewardSplit | uint256 | undefined   |
-| treasurySplit    | uint256 | undefined   |
 | treasury         | address | undefined   |
 | staking          | address | undefined   |

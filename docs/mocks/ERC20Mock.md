@@ -1,4 +1,4 @@
-# xmgMagicToken
+# ERC20Mock
 
 ## Methods
 
@@ -99,18 +99,6 @@ _Atomically decreases the allowance granted to `spender` by the caller. This is 
 | ---- | ---- | ----------- |
 | \_0  | bool | undefined   |
 
-### enter
-
-```solidity
-function enter(uint256 _amount) external nonpayable
-```
-
-#### Parameters
-
-| Name     | Type    | Description |
-| -------- | ------- | ----------- |
-| \_amount | uint256 | undefined   |
-
 ### increaseAllowance
 
 ```solidity
@@ -132,29 +120,17 @@ _Atomically increases the allowance granted to `spender` by the caller. This is 
 | ---- | ---- | ----------- |
 | \_0  | bool | undefined   |
 
-### leave
+### mint
 
 ```solidity
-function leave(uint256 _share) external nonpayable
+function mint(uint256 _amount) external nonpayable
 ```
 
 #### Parameters
 
-| Name    | Type    | Description |
-| ------- | ------- | ----------- |
-| \_share | uint256 | undefined   |
-
-### mgMagic
-
-```solidity
-function mgMagic() external view returns (contract IERC20)
-```
-
-#### Returns
-
-| Name | Type            | Description |
-| ---- | --------------- | ----------- |
-| \_0  | contract IERC20 | undefined   |
+| Name     | Type    | Description |
+| -------- | ------- | ----------- |
+| \_amount | uint256 | undefined   |
 
 ### name
 

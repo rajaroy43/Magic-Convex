@@ -70,3 +70,9 @@ function getUserDepositedMagic(uint256 atlasDepositId, address user) external vi
 ```solidity
 function update() external nonpayable
 ```
+
+### withdrawAndHarvestAll
+
+```solidity
+function withdrawAndHarvestAll() external nonpayable
+```
