@@ -131,7 +131,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
     function depositTreasures(uint256 tokenId,uint256 amount) external   {
         require(treasure != address(0), "Cannot deposit Treasure");
         require(amount > 0, "Amount is 0");
-        uint256 leftTreasureInMainPool = 20 - treasureInMainPool();
+        uint256 leftTreasureInMainPool = 20 - treasureInPool(WhichPool.TreasureMainPool);
         if(leftTreasureInMainPool != 0)
         amount = amount >  leftTreasureInMainPool ? leftTreasureInMainPool : amount ;
        _depositTreasures(tokenId,amount);
@@ -140,6 +140,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
 
     function withdrawTreasure(uint256 tokenId,uint256 amount) external   {
         require(treasure != address(0), "Cannot withdraw Treasure");
+        require(amount  > 0 ,"Amount is 0");
         uint256 currReserveAmount = treasureReservePool.stakedPerToken[msg.sender][tokenId];
         uint256 currMainAmount = treasureMainPool.stakedPerToken[msg.sender][tokenId];
         if(currReserveAmount >= amount){
@@ -209,7 +210,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
             _addToLegionPool(_tokenId,nftBoost,WhichPool.LegionReservePool);
             return;
         }
-        if(legionMainPoolLength() < 3 ){
+        uint256 legionMainPoolLength = legionPoolTokenIds(WhichPool.LegionMainPool).length;
+        if( legionMainPoolLength < 3 ){
             _addToLegionPool(_tokenId,nftBoost,WhichPool.LegionMainPool);
         } 
         else{
@@ -236,8 +238,9 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
     }
 
     function _depositTreasures(uint256 _tokenId,uint256 _amount) internal{
-        uint256 nftBoost = _getBoost(treasure,_tokenId,_amount);       
-        if(treasureInMainPool() < 20 ){
+        uint256 nftBoost = _getBoost(treasure,_tokenId,_amount);    
+        uint256 treasureInMainPool = treasureInPool(WhichPool.TreasureMainPool);
+        if(treasureInMainPool < 20 ){
             _addToTreasurePool(_tokenId,nftBoost,_amount,WhichPool.TreasureMainPool);
         }  
         else{
@@ -284,7 +287,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
     }
 
     function _addToTreasurePool(uint256 _tokenId,uint256 _nftBoost,uint256 _amount,WhichPool whichPool) internal{
-        UserBoost memory userBoost = UserBoost(msg.sender,_nftBoost,block.timestamp,_tokenId,1);
+        UserBoost memory userBoost = UserBoost(msg.sender,_nftBoost,block.timestamp,_tokenId,_amount);
         if(whichPool == WhichPool.TreasureMainPool){
             IERC1155Upgradeable(treasure).safeTransferFrom(
                 msg.sender,
@@ -330,6 +333,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         pool.deposits += amount;
         pool.stakedPerToken[user][tokenId] += amount;
         pool.userIndex[user][tokenId][amount].push(userBoostlength);
+
     }
 
     function _withdrawLegionFromPool(LegionPool storage legionPool,address user,uint256 _tokenId) internal{
@@ -344,6 +348,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
 
     function _withdrawTreasureFromPool(TreasurePool storage treasurePool,address _user,uint256 _tokenId,uint256 _amount) internal{
         uint256[] memory indexTreausres = treasurePool.userIndex[_user][_tokenId][_amount];
+        uint256 indexTreausresLen = indexTreausres.length;
+        require(indexTreausresLen > 0 ,"Provide Exact amount");
         uint256 userBoostIndex = indexTreausres[indexTreausres.length-1];
 
         UserBoost[] storage userBoosts  = treasurePool.userBoosts;
@@ -361,6 +367,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         removedUserBoost = userBoosts[_findIndex];
         uint256 removedTokenId = removedUserBoost.tokenId ;
         userBoosts[_findIndex] = userBoosts[userBoosts.length - 1];
+        pool.userIndex[userBoosts[userBoosts.length - 1].tokenId] = _findIndex;
         userBoosts.pop();
         pool.deposits.remove(removedTokenId);
         delete pool.userIndex[removedTokenId];
@@ -372,7 +379,14 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         uint256 tokenId = removedUserBoost.tokenId;
         uint256 amount = removedUserBoost.amount;
         address user = removedUserBoost.user;
+
         userBoosts[_indexUserBoost] = userBoosts[userBoosts.length - 1];
+        
+        address replacedUser = userBoosts[_indexUserBoost].user;
+        uint256 replacedTokenId = userBoosts[_indexUserBoost].tokenId;
+        uint256 replacedAmount = userBoosts[_indexUserBoost].amount;
+        pool.userIndex[replacedUser][replacedTokenId][replacedAmount].pop();
+        pool.userIndex[replacedUser][replacedTokenId][replacedAmount].push(_indexUserBoost);
         userBoosts.pop();
         pool.deposits -= amount;
         pool.stakedPerToken[user][tokenId] -= amount;
@@ -449,12 +463,63 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
   
      }
 
-    function legionMainPoolLength() public view returns(uint256){
-        return legionMainPool.deposits.values().length;
+    function legionPoolTokenIds(WhichPool whichPool) public view returns(uint256[] memory){
+        if(whichPool == WhichPool.LegionMainPool)
+            return legionMainPool.deposits.values();
+        else if(whichPool == WhichPool.LegionReservePool)
+            return legionReservePool.deposits.values();
     }
 
-    function treasureInMainPool() public view returns(uint256){
-        return treasureMainPool.deposits;
+    function getUserLegionData(address user,uint256 tokenId) public view returns(UserBoost memory){
+        WhichPool whichPool = isPool[user][tokenId];
+        uint256 userIndex;
+        if(whichPool == WhichPool.LegionMainPool){
+            userIndex =  legionMainPool.userIndex[tokenId];
+            return legionMainPool.userBoosts[userIndex];
+        }
+        else if(whichPool == WhichPool.LegionReservePool){
+            userIndex =  legionReservePool.userIndex[tokenId];
+            return legionReservePool.userBoosts[userIndex];
+        }
+    }
+
+    function getUserTreasureData(WhichPool whichPool,uint256 index) public view returns(UserBoost memory){
+        if(whichPool == WhichPool.TreasureMainPool){
+            if(treasureMainPool.userBoosts.length   >= index + 1)
+                return treasureMainPool.userBoosts[index];
+        }
+        else if(whichPool == WhichPool.TreasureReservePool){
+            if(treasureReservePool.userBoosts.length >= index + 1)
+                return treasureReservePool.userBoosts[index];
+        }
+    }
+
+    function getUserIndexTreasureBoosts(address user,uint256 tokenId,uint256 amount) public view returns(uint256[] memory){
+        uint256 currReserveAmount = treasureReservePool.stakedPerToken[user][tokenId];
+        uint256 currMainAmount = treasureMainPool.stakedPerToken[user][tokenId];
+
+        if(currReserveAmount >= amount){
+            return treasureReservePool.userIndex[user][tokenId][amount];
+        }
+
+        else if(currMainAmount >= amount){
+            return treasureMainPool.userIndex[user][tokenId][amount];
+        }
+    }
+
+    function getLegionUserBoosts() public view returns(UserBoost[] memory,UserBoost[] memory) {
+        return (legionMainPool.userBoosts,legionReservePool.userBoosts);
+    }
+
+    function getTreasureUserBoosts() public view returns(UserBoost[] memory,UserBoost[] memory) {
+        return (treasureMainPool.userBoosts,treasureReservePool.userBoosts);
+    }
+
+    function treasureInPool(WhichPool whichPool) public view returns(uint256){
+        if(whichPool == WhichPool.TreasureMainPool)
+            return treasureMainPool.deposits;
+        else if(whichPool == WhichPool.TreasureReservePool)
+            return treasureReservePool.deposits;
     }
 
     function onERC721Received(
