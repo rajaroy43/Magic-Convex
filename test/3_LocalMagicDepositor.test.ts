@@ -25,7 +25,7 @@ import {
   unStakeLegion,
   unStakeTreasures,
 } from "../utils/MagicNftStaking";
-import { AtlasMine, MagicDepositor, Treasure, Legion, RewardPool, IERC20 } from "../typechain";
+import { AtlasMine, MagicDepositor, Treasure, Legion, RewardPool, IERC20, MockAtlasMine } from "../typechain";
 import { stakePrMagic } from "../utils/StakeRewardPool";
 
 const { AddressZero } = ethers.constants;
@@ -394,7 +394,9 @@ describe("Local - MagicDepositor", () => {
 
     const fixture = deployments.createFixture(async () => {
       const treasureFixture = await TreasureFixture();
-      const { alice, bob, carol, magicToken, magicDepositor } = treasureFixture;
+      const { alice, bob, carol, magicToken, magicDepositor,lendingAuctionNft } = treasureFixture;
+
+      await (await lendingAuctionNft.setMagicDepositor(alice.address)).wait()
 
       for (let i = 0; i < 3; i++) {
         await Promise.all([
@@ -673,7 +675,7 @@ describe("Local - MagicDepositor", () => {
         wallet: Wallet | SignerWithAddress,
         magicDepositor: MagicDepositor,
         treasure: Treasure,
-        atlasMine: AtlasMine,
+        atlasMine: MockAtlasMine,
         TREASURE_TOKEN_ID: number,
         treasureBoost: BigNumber,
         stakedTreasureAmount: number,
@@ -706,7 +708,7 @@ describe("Local - MagicDepositor", () => {
         wallet: Wallet | SignerWithAddress,
         magicDepositor: MagicDepositor,
         treasure: Treasure,
-        atlasMine: AtlasMine,
+        atlasMine: MockAtlasMine,
         TREASURE_TOKEN_ID: number,
         treasureBoost: BigNumber,
         unStakedTreasureAmount: number,
@@ -766,6 +768,7 @@ describe("Local - MagicDepositor", () => {
           TREASURE_TOKEN_ID_0,
           stakedTreasureAmount
         );
+        
         await checkStakedTreasure(
           alice,
           magicDepositor,
@@ -941,7 +944,7 @@ describe("Local - MagicDepositor", () => {
         alice: Wallet | SignerWithAddress,
         magicDepositor: MagicDepositor,
         legion: Legion,
-        atlasMine: AtlasMine,
+        atlasMine: MockAtlasMine,
         LEGION_TOKEN_ID: number,
         legionBoost: BigNumber,
         afterStakingLegionAmount: number[]
@@ -959,7 +962,7 @@ describe("Local - MagicDepositor", () => {
         alice: Wallet | SignerWithAddress,
         magicDepositor: MagicDepositor,
         legion: Legion,
-        atlasMine: AtlasMine,
+        atlasMine: MockAtlasMine,
         LEGION_TOKEN_ID: number,
         legionBoost: BigNumber,
         afterStakingLegionAmount: number[]
