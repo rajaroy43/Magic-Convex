@@ -12,12 +12,14 @@ import {
   TREASURE_NFT_ADDRESS,
   TREASURE_TOKEN_IDS,
   LEGION_TOKEN_IDS,
+  TREASURE_CONTRACT_OWNER,
 } from "../../utils/constants";
 import {
   IERC1155__factory,
   IERC20__factory,
   IERC721__factory,
   MasterOfCoin__factory,
+  Treasure__factory,
 } from "../../typechain";
 import { ethers, timeAndMine } from "hardhat";
 import { impersonate } from "../../utils/Impersonate";
@@ -29,8 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     hre.ethers.provider
   );
   const legion = IERC721__factory.connect(LEGION_NFT_ADDRESS, hre.ethers.provider);
-  const treasure = IERC1155__factory.connect(TREASURE_NFT_ADDRESS, hre.ethers.provider);
-
+  const treasure = Treasure__factory.connect(TREASURE_NFT_ADDRESS, hre.ethers.provider);
   const [alice, bob, carol] = await ethers.getSigners();
 
   {
@@ -49,21 +50,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       })
     );
 
-    const treasureTokenAmounts = await Promise.all(
+
+    await Promise.all(
       TREASURE_TOKEN_IDS.map(async (id) => {
-        return await treasure.balanceOf(RICH_USER_ADDRESS, id);
+        const amount = 15;
+        await impersonate(TREASURE_CONTRACT_OWNER, alice, hre);
+        const signer = hre.ethers.provider.getSigner(TREASURE_CONTRACT_OWNER);
+        await treasure.connect(signer).mint(alice.address, id,amount);
+        await treasure.connect(signer).mint(bob.address, id,amount);
+        await treasure.connect(signer).mint(carol.address, id,amount);
       })
     );
-
-    const batchTransferArgs = [
-      RICH_USER_ADDRESS,
-      alice.address,
-      TREASURE_TOKEN_IDS,
-      treasureTokenAmounts,
-      "0x",
-    ];
-    // @ts-ignore
-    await treasure.connect(signer).safeBatchTransferFrom(...batchTransferArgs);
   }
 
   /** Hack to work around precision issues in AtlasMine */
