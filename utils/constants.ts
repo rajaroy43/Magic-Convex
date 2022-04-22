@@ -13,6 +13,7 @@ export const LEGION_NFT_ADDRESS = "0xfE8c1ac365bA6780AEc5a985D989b327C27670A1";
 export const TREASURE_NFT_ADDRESS = "0xEBba467eCB6b21239178033189CeAE27CA12EaDf";
 export const RICH_USER_ADDRESS = "0xfd7a5c211ac4a00182aba2e92e1ccb0daacf8ab0";
 export const SECONDARY_RICH_USER_ADDRESS = "0xb7e50106a5bd3cf21af210a755f9c8740890a8c9";
+export const TREASURE_CONTRACT_OWNER = "0x482729215AAF99B3199E41125865821ed5A4978a";
 export const ARBITRUM_BLOCK_GAS_LIMIT = 200_000_000;
 
 /**
@@ -22,6 +23,7 @@ export const PR_MAGIC_TOKEN_CONTRACT_NAME = "prMagicToken";
 export const MAGIC_DEPOSITOR_CONTRACT_NAME = "MagicDepositor";
 export const MAGIC_STAKING_CONTRACT_NAME = "MagicStaking";
 export const REWARD_POOL_CONTRACT_NAME = "RewardPool";
+export const LENDING_AUCTION_NFT_CONTRACT_NAME = "LendingAuctionNft";
 
 /**
  * Some unit variables
@@ -39,9 +41,9 @@ export const TEN_MILLION_MAGIC_BN = parseEther("10000000");
 export const PRECISION = parseEther("1");
 
 export const ONE_TREAUSRE = 1;
-export const TREASURE_TOKEN_IDS = [117, 133, 151, 73];
+export const TREASURE_TOKEN_IDS = [49,51,52,95,97];
 export const ONE_LEGION = 1;
-export const LEGION_TOKEN_IDS = [25855, 25856, 25857, 25858];
+export const LEGION_TOKEN_IDS = [25854,25855, 25856, 25857, 25858];
 
 /**
  * Configuration of Magic Depositor

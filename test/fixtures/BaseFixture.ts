@@ -4,6 +4,7 @@ import {
   IERC1155__factory,
   IERC20__factory,
   IERC721__factory,
+  LendingAuctionNft__factory,
   MagicDepositor__factory,
   PrMagicToken__factory,
   RewardPool__factory,
@@ -17,6 +18,7 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     prMagicToken: { address: prMagicTokenAddress },
     MagicDepositor: { address: MagicDepositorAddress },
     RewardPool: { address: rewardPoolAddress },
+    LendingAuctionNft :{address :lendingAuctionNftAddress}
   } = await deployments.fixture();
   const [alice, bob, carol, dave, mallory] = await ethers.getSigners();
   const secondaryUsers = [bob, carol, dave];
@@ -28,6 +30,7 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
   const treasure = IERC1155__factory.connect(TREASURE_NFT_ADDRESS, alice);
   const legion = IERC721__factory.connect(LEGION_NFT_ADDRESS, alice);
   const rewardPool = RewardPool__factory.connect(rewardPoolAddress, alice);
+  const lendingAuctionNft = LendingAuctionNft__factory.connect(lendingAuctionNftAddress, alice);
   const [stakeRewardSplit, treasuryAddress, stakingAddress] = await magicDepositor.getConfig();
 
   const split = await magicToken
@@ -58,5 +61,6 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     treasure,
     legion,
     rewardPool,
+    lendingAuctionNft
   };
 });
