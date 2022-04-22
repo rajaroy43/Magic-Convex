@@ -563,26 +563,24 @@ contract AtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155
     ) public view virtual returns (uint256) {
         if (_nft == treasure) {
             return getTreasureBoost(_tokenId, _amount);
-        } else {
-            return getLegionBoost(1, 1); // due to difficult to mock legionMetadataStore
-        }
-        // } else if (_nft == legion) {
-        //     try ILegionMetadataStore(legionMetadataStore).metadataForLegion(_tokenId) returns (
-        //         LegionMetadata memory metadata
-        //     ) {
-        //         return getLegionBoost(uint256(metadata.legionGeneration), uint256(metadata.legionRarity));
-        //     } catch Error(
-        //         string memory /*reason*/
-        //     ) {
-        //         return 0;
-        //     } catch Panic(uint256) {
-        //         return 0;
-        //     } catch (
-        //         bytes memory /*lowLevelData*/
-        //     ) {
-        //         return 0;
-        //     }
-        // }
+        } 
+        else if (_nft == legion) {
+             try ILegionMetadataStore(legionMetadataStore).metadataForLegion(_tokenId) returns (
+                 LegionMetadata memory metadata
+             ) {
+                 return getLegionBoost(uint256(metadata.legionGeneration), uint256(metadata.legionRarity));
+             } catch Error(
+                 string memory /*reason*/
+             ) {
+                 return 0;
+             } catch Panic(uint256) {
+                 return 0;
+             } catch (
+                 bytes memory /*lowLevelData*/
+             ) {
+                 return 0;
+             }
+         }
 
         return 0;
     }
