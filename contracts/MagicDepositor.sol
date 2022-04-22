@@ -115,8 +115,7 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
         atlasDeposit.depositedMagicPerAddress[msg.sender] = 0;
 
         if (stake) {
-            prMagic.safeApprove(staking, 0);
-            prMagic.safeApprove(staking, claim);
+            prMagic.safeIncreaseAllowance(staking, claim);
             IRewards(staking).stakeFor(msg.sender, claim);
         } else {
             prMagic.safeTransfer(msg.sender, claim);

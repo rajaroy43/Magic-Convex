@@ -25,7 +25,7 @@ import {
   unStakeLegion,
   unStakeTreasures,
 } from "../utils/MagicNftStaking";
-import { AtlasMine, MagicDepositor, Treasure, Legion, RewardPool, IERC20, MockAtlasMine } from "../typechain";
+import { MagicDepositor, Treasure, Legion, RewardPool, IERC20, MockAtlasMine } from "../typechain";
 import { stakePrMagic } from "../utils/StakeRewardPool";
 
 const { AddressZero } = ethers.constants;

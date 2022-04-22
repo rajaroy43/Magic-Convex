@@ -42,6 +42,10 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param legion Address of legion contract
     event LegionChanged(address legion);
 
+    /// @notice Event for setting lendAuction contract
+    /// @param lendAuction Address of lendAuction contract
+    event LendAuctionChanged(address lendAuction);
+
     modifier onlyLendAuction() {
         require(msg.sender == lendAuction, "Not lend auction");
         _;
@@ -53,10 +57,11 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
         address _legion,
         address _lendAuction
     ) internal onlyInitializing {
-        atlasMine = IAtlasMine(_atlasMine);
-        treasure = _treasure;
-        legion = _legion;
-        lendAuction = _lendAuction;
+        _setAtlasMine(_atlasMine);
+        _setTreasure(_treasure);
+        _setLegion(_legion);
+        _setLendAuction(_lendAuction);
+
         IERC1155(treasure).setApprovalForAll(_atlasMine, true);
         IERC721(legion).setApprovalForAll(_atlasMine, true);
     }
@@ -65,6 +70,12 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param _atlasMine atlasmine contract address
 
     function setAtlasMine(address _atlasMine) external onlyOwner {
+        _setAtlasMine(_atlasMine);
+    }
+
+    /// @notice setting atlasmine contract
+    /// @param _atlasMine atlasmine contract address
+    function _setAtlasMine(address _atlasMine) private {
         require(_atlasMine != address(0), "atlasmine zero address");
         require(address(atlasMine) != _atlasMine, "same atlasMine address");
         atlasMine = IAtlasMine(_atlasMine);
@@ -75,6 +86,12 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param _treasure treasure contract address
 
     function setTreasure(address _treasure) external onlyOwner {
+        _setTreasure(_treasure);
+    }
+
+    /// @notice setting treasure contract
+    /// @param _treasure treasure contract address
+    function _setTreasure(address _treasure) private {
         require(_treasure != address(0), "treasure zero address");
         require(treasure != _treasure, "same treasure address");
         treasure = _treasure;
@@ -85,10 +102,32 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param _legion legion contract address
 
     function setLegion(address _legion) external onlyOwner {
+        _setLegion(_legion);
+    }
+
+    /// @notice setting legion contract
+    /// @param _legion legion contract address
+    function _setLegion(address _legion) private {
         require(_legion != address(0), "legion zero address");
         require(legion != _legion, "same legion address");
         legion = _legion;
         emit LegionChanged(legion);
+    }
+
+    /// @notice setting LendingAuction contract
+    /// @param _lendAuction LendingAuction contract address
+
+    function setLendAuction(address _lendAuction) external onlyOwner {
+        _setLendAuction(_lendAuction);
+    }
+
+    /// @notice setting LendingAuction contract
+    /// @param _lendAuction LendingAuction contract address
+    function _setLendAuction(address _lendAuction) private {
+        require(_lendAuction != address(0), "lendAuction zero address");
+        require(lendAuction != _lendAuction, "same lendAuction address");
+        lendAuction = _lendAuction;
+        emit LendAuctionChanged(lendAuction);
     }
 
     /// @notice staking treasure nft in atlasmine for boosting rewards

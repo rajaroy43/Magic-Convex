@@ -20,7 +20,29 @@ Like `Convex` users should deposit the `prMagic` tokens into `prMagicStaking` co
 
 Locked Magic token (similar to `cvxCRV`).
 
+### PreciousNFTLending
+
+NFT lending contract for Treasure and Legion tokens for APY boosting on AtlasMine staking.
+
+### PreciousChef
+
+Precious token distribution contract based on boosting from PreciousNFTLending
+
 ## Token & Fund Flow Diagrams
+
+### High-level architecture
+
+```mermaid
+graph LR
+    U(User) -->|MAGIC deposit|D
+    D[MagicDepositor] -->|MAGIC lock| AM[AtlasMine]
+    D --> |stake| S[prMagicStaking]
+    U --> |NFT deposit/withdraw| NFT[PreciousNFTLending]
+    NFT -->|NFT deposit/withdraw| D
+    NFT --> |deposit/withdraw| PRMC[PreciousChef]
+    U --> |harvest| PRMC
+
+```
 
 ### Token Flow Diagram
 

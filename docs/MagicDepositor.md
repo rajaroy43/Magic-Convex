@@ -9,7 +9,7 @@ cvxCRV like perpetual staking contract of MAGIC tokens
 ### atlasDeposits
 
 ```solidity
-function atlasDeposits(uint256) external view returns (uint256 activationTimestamp, uint256 accumulatedMagic, uint256 mintedShares, bool exists, bool isActive)
+function atlasDeposits(uint256) external view returns (uint256 activationTimestamp, uint256 accumulatedMagic, bool isActive)
 ```
 
 Info of each deposit
@@ -26,8 +26,6 @@ Info of each deposit
 | ------------------- | ------- | ----------- |
 | activationTimestamp | uint256 | undefined   |
 | accumulatedMagic    | uint256 | undefined   |
-| mintedShares        | uint256 | undefined   |
-| exists              | bool    | undefined   |
 | isActive            | bool    | undefined   |
 
 ### atlasMine
@@ -109,7 +107,7 @@ Deposit Magic tokens
 ### getConfig
 
 ```solidity
-function getConfig() external view returns (uint128, uint128, address, address)
+function getConfig() external view returns (uint256, address, address)
 ```
 
 VIEW FUNCTIONS
@@ -118,10 +116,9 @@ VIEW FUNCTIONS
 
 | Name | Type    | Description |
 | ---- | ------- | ----------- |
-| \_0  | uint128 | undefined   |
-| \_1  | uint128 | undefined   |
+| \_0  | uint256 | undefined   |
+| \_1  | address | undefined   |
 | \_2  | address | undefined   |
-| \_3  | address | undefined   |
 
 ### getUserDepositedMagic
 
@@ -151,20 +148,6 @@ function harvestForNextDeposit() external view returns (uint256)
 ```
 
 // Accumulated magic through harvest that is going to be recompounded on the next atlasDeposit
-
-#### Returns
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | uint256 | undefined   |
-
-### heldMagic
-
-```solidity
-function heldMagic() external view returns (uint256)
-```
-
-// Internal accounting that determines the amount of shares to mint on each atlasDeposit operation
 
 #### Returns
 
@@ -310,7 +293,7 @@ setting atlasmine contract
 ### setConfig
 
 ```solidity
-function setConfig(uint128 _stakeRewardSplit, uint128 _treasurySplit, address _treasury, address _staking) external nonpayable
+function setConfig(uint256 _stakeRewardSplit, address _treasury, address _staking) external nonpayable
 ```
 
 ACCESS-CONTROLLED FUNCTIONS
@@ -319,8 +302,7 @@ ACCESS-CONTROLLED FUNCTIONS
 
 | Name               | Type    | Description |
 | ------------------ | ------- | ----------- |
-| \_stakeRewardSplit | uint128 | undefined   |
-| \_treasurySplit    | uint128 | undefined   |
+| \_stakeRewardSplit | uint256 | undefined   |
 | \_treasury         | address | undefined   |
 | \_staking          | address | undefined   |
 
@@ -444,6 +426,14 @@ function update() external nonpayable
 
 Withdraw unlocked deposit, Harvest rewards for all deposits, Disperse rewards
 
+### withdrawAndHarvestAll
+
+```solidity
+function withdrawAndHarvestAll() external nonpayable
+```
+
+Withdraw and harvest all deposit and keep in the contract
+
 ### withdrawERC1155
 
 ```solidity
@@ -482,7 +472,7 @@ withdrawing any erc721 nft
 ### ActivateDeposit
 
 ```solidity
-event ActivateDeposit(uint256 indexed atlasDepositIndex, uint256 depositAmount, uint256 accumulatedMagic, uint256 mintedShares)
+event ActivateDeposit(uint256 indexed atlasDepositIndex, uint256 depositAmount, uint256 accumulatedMagic)
 ```
 
 Event for activating a deposit
@@ -494,7 +484,6 @@ Event for activating a deposit
 | atlasDepositIndex `indexed` | uint256 | Index of the deposit                                 |
 | depositAmount               | uint256 | The amount of Magic token deposited into AtlasMine   |
 | accumulatedMagic            | uint256 | The amount of Magic token deposited during the epoch |
-| mintedShares                | uint256 | The amount prMagic minted for the epoch              |
 
 ### AtlasMineChanged
 
@@ -529,18 +518,19 @@ Event for claiming prMagic for activated deposits
 ### DepositFor
 
 ```solidity
-event DepositFor(address indexed from, address indexed to, uint256 amount)
+event DepositFor(address indexed from, address indexed to, uint256 indexed atlasDepositIndex, uint256 amount)
 ```
 
 Event for depositing Magic tokens
 
 #### Parameters
 
-| Name           | Type    | Description                                  |
-| -------------- | ------- | -------------------------------------------- |
-| from `indexed` | address | Address of user that deposits Magic tokens   |
-| to `indexed`   | address | Address of user that receives prMagic tokens |
-| amount         | uint256 | Amount of deposit                            |
+| Name                        | Type    | Description                                  |
+| --------------------------- | ------- | -------------------------------------------- |
+| from `indexed`              | address | Address of user that deposits Magic tokens   |
+| to `indexed`                | address | Address of user that receives prMagic tokens |
+| atlasDepositIndex `indexed` | uint256 | undefined                                    |
+| amount                      | uint256 | Amount of deposit                            |
 
 ### LegionChanged
 
@@ -619,7 +609,7 @@ Event for setting treasure contract
 ### UpdatedConfiguration
 
 ```solidity
-event UpdatedConfiguration(uint256 stakeRewardSplit, uint256 treasurySplit, address treasury, address staking)
+event UpdatedConfiguration(uint256 stakeRewardSplit, address treasury, address staking)
 ```
 
 #### Parameters
@@ -627,6 +617,5 @@ event UpdatedConfiguration(uint256 stakeRewardSplit, uint256 treasurySplit, addr
 | Name             | Type    | Description |
 | ---------------- | ------- | ----------- |
 | stakeRewardSplit | uint256 | undefined   |
-| treasurySplit    | uint256 | undefined   |
 | treasury         | address | undefined   |
 | staking          | address | undefined   |
