@@ -14,7 +14,7 @@ import "./MAGIC/IAtlasMine.sol";
 contract MagicNftStaking is Initializable, OwnableUpgradeable {
     address public treasure; //treasure erc1155 nft in atlasmine
     address public legion; //legion erc721 nft in atlasmine
-    address public lendAuction;
+    address public lendAuction;//lendingAuction contract
 
 
     IAtlasMine public atlasMine; //AtlasMine contract

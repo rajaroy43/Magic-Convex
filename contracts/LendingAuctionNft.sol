@@ -10,13 +10,15 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
 import {IMagicNftDepositor} from "./Interfaces.sol";
 import "./MAGIC/IAtlasMine.sol";
 
+/// @title LendingAuctionNft
+/// @notice nft lending auction for boosting rewards by staking to magicDepositor
 contract LendingAuctionNft is Initializable, OwnableUpgradeable{
 
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
     address public  treasure; //treasure erc1155 nft in atlasmine
     address public  legion; //legion erc721 nft in atlasmine
-    IAtlasMine public atlasmine;
+    IAtlasMine public atlasmine;//AtlasMine contract
     IMagicNftDepositor public magicDepositor; //magicDepositor contract
 
     struct UserBoost{
@@ -82,7 +84,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         emit MagicDepositorChanged(address(magicDepositor));
     }
 
-    // Depositing NFT 
+    /// @notice depositing legion nft 
+    /// @param tokenId legion tokenId
 
     function depositLegion(uint256 tokenId) external   {
         require(legion != address(0), "Cannot deposit Legion");
@@ -90,6 +93,9 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
        _depositLegion(tokenId);
         emit Deposit(legion, tokenId, 1);
     }
+
+    /// @notice Withdrawing legion nft 
+    /// @param tokenId legion tokenId
 
     function withdrawLegion(uint256 tokenId) external   {
         require(legion != address(0), "Cannot Withdraw Legion");
@@ -128,6 +134,10 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         emit Withdrawn(legion, tokenId, 1);
     }
 
+    /// @notice depositing Treasures nft 
+    /// @param tokenId Treasure tokenId
+    /// @param amount Treasure amount
+
     function depositTreasures(uint256 tokenId,uint256 amount) external   {
         require(treasure != address(0), "Cannot deposit Treasure");
         require(amount > 0, "Amount is 0");
@@ -137,6 +147,11 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
        _depositTreasures(tokenId,amount);
         emit Deposit(treasure, tokenId, amount);
     }
+
+    /// @notice withdrawing Treasures nft 
+    /// @param tokenId Treasure tokenId
+    /// @param amount Treasure amount
+
 
     function withdrawTreasure(uint256 tokenId,uint256 amount) external   {
         require(treasure != address(0), "Cannot withdraw Treasure");
@@ -395,7 +410,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
    }
  
 
-     // will return true/false and array index 
+    // will return true/false and array index 
     // true if we find higher boost than existing 
     // false if we don't find higher boost than exiting 
 
@@ -428,6 +443,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         return (false,-1);
     }
 
+    // return higher existing userBoost array index
+    
     function _getHigherExistingBoost(UserBoost[] memory userBoosts) internal pure returns(uint256 index){
         uint256 len = userBoosts.length;
        
@@ -457,11 +474,16 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         return atlasmine.getNftBoost(_nft,_tokenId,_amount);
     }
 
+    // check if magicDepositor already staked Legion1_1
+
     function _checkLegion1Staked() internal view returns(bool){
         bool isLegion1_1Staked = atlasmine.isLegion1_1Staked(address(magicDepositor));
         return isLegion1_1Staked;
   
-     }
+    }
+
+    /// @notice getting all tokenIds present in legionMainPool and legionReservePool
+    /// @param whichPool whichPool : LegionMainPool and LegionReservePool
 
     function legionPoolTokenIds(WhichPool whichPool) public view returns(uint256[] memory){
         if(whichPool == WhichPool.LegionMainPool)
@@ -469,6 +491,10 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         else if(whichPool == WhichPool.LegionReservePool)
             return legionReservePool.deposits.values();
     }
+
+    /// @notice getting all tokenIds present in legionMainPool and legionReservePool
+    /// @param user address of user
+    /// @param tokenId legion tokenId
 
     function getUserLegionData(address user,uint256 tokenId) public view returns(UserBoost memory){
         WhichPool whichPool = isPool[user][tokenId];
@@ -483,6 +509,10 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         }
     }
 
+    /// @notice getting user treasure data at index 
+    /// @param whichPool whichPool : TreasureMainPool and TreasureReservePool
+    /// @param index array index 
+
     function getUserTreasureData(WhichPool whichPool,uint256 index) public view returns(UserBoost memory){
         if(whichPool == WhichPool.TreasureMainPool){
             if(treasureMainPool.userBoosts.length   >= index + 1)
@@ -493,6 +523,11 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
                 return treasureReservePool.userBoosts[index];
         }
     }
+
+    /// @notice getting all treasure userBoosts indexes array
+    /// @param user address of user
+    /// @param tokenId legion tokenId
+    /// @param amount amount of treasure token
 
     function getUserIndexTreasureBoosts(address user,uint256 tokenId,uint256 amount) public view returns(uint256[] memory){
         uint256 currReserveAmount = treasureReservePool.stakedPerToken[user][tokenId];
@@ -507,13 +542,20 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         }
     }
 
+    /// @notice getting all userBoosts present in legionMainPool and legionReservePool
+
     function getLegionUserBoosts() public view returns(UserBoost[] memory,UserBoost[] memory) {
         return (legionMainPool.userBoosts,legionReservePool.userBoosts);
     }
 
+    /// @notice getting all userBoosts present in treasureMainPool and treasureReservePool
+
     function getTreasureUserBoosts() public view returns(UserBoost[] memory,UserBoost[] memory) {
         return (treasureMainPool.userBoosts,treasureReservePool.userBoosts);
     }
+
+    /// @notice getting all deposits in TreasureMainPool/TreasureReservePool
+    /// @param whichPool whichPool : TreasureMainPool and TreasureReservePool
 
     function treasureInPool(WhichPool whichPool) public view returns(uint256){
         if(whichPool == WhichPool.TreasureMainPool)
