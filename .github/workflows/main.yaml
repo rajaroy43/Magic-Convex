@@ -4,10 +4,10 @@ on:
   # Triggers the workflow on push or pull request events but only for the develop branch
   push:
     branches: [development, main, master, feat/*, fix/*]
-    paths: ["**.js", "**.ts", ".json", "**.sol"]
+    paths: ["**.js", "**.ts", ".json", "**.sol", "**.yaml"]
   pull_request:
     branches: [development, main, master, feat/*, fix/*]
-    paths: ["**.js", "**.ts", ".json", "**.sol"]
+    paths: ["**.js", "**.ts", ".json", "**.sol", "**.yaml"]
 jobs:
   build:
     runs-on: ubuntu-latest
