@@ -255,26 +255,27 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
                 nftBoost,
                 1
             );
-            if (find) {
-                // Removing lower rarity legion nft from mainLegionPool
-                UserBoost memory removingUserBoost = _removeLegionFromPool(
-                    legionMainPool,
-                    uint256(findIndex)
-                );
-
-                uint256 removedTokenId = removingUserBoost.tokenId;
-                magicDepositor.unStakeLegion(removedTokenId);
-
-                // Adding removed nft , to reserveLegionPool
-
-                _addLegion(legionReservePool, removingUserBoost, WhichPool.LegionReservePool);
-
-                // Adding upcomming Higher rarity NFT to mainLegionPool
-                _addToLegionPool(_tokenId, nftBoost, WhichPool.LegionMainPool);
-            } else {
+            if (!find) {
                 // Add Nft to reserve pool
                 _addToLegionPool(_tokenId, nftBoost, WhichPool.LegionReservePool);
+                return;
             }
+            // Otherwise
+            // Removing lower rarity legion nft from mainLegionPool
+            UserBoost memory removingUserBoost = _removeLegionFromPool(
+                legionMainPool,
+                uint256(findIndex)
+            );
+
+            uint256 removedTokenId = removingUserBoost.tokenId;
+            magicDepositor.unStakeLegion(removedTokenId);
+
+            // Adding removed nft , to reserveLegionPool
+
+            _addLegion(legionReservePool, removingUserBoost, WhichPool.LegionReservePool);
+
+            // Adding upcomming Higher rarity NFT to mainLegionPool
+            _addToLegionPool(_tokenId, nftBoost, WhichPool.LegionMainPool);
         }
     }
 
@@ -289,29 +290,31 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
                 nftBoost,
                 _amount
             );
-            if (find) {
-                UserBoost[] storage userBoosts = treasureMainPool.userBoosts;
-                UserBoost memory userBoost = userBoosts[uint256(findIndex)];
-                // address user = userBoost.user;
-                uint256 removedTokenAmount = userBoost.amount;
-                uint256 removedTokenId = userBoost.tokenId;
-
-                UserBoost memory removingUserBoost = _removeTreasureFromPool(
-                    treasureMainPool,
-                    uint256(findIndex)
-                );
-
-                magicDepositor.unStakeTreasure(removedTokenId, removedTokenAmount);
-
-                // Adding removed nft , to reserveLegionPool
-                _addTreasure(treasureReservePool, removingUserBoost);
-
-                // Adding upcomming Higher rarity NFT to mainTreasurePool
-                _addToTreasurePool(_tokenId, nftBoost, _amount, WhichPool.TreasureMainPool);
-            } else {
+            if (!find) {
                 // Add Nft to reserve pool
                 _addToTreasurePool(_tokenId, nftBoost, _amount, WhichPool.TreasureReservePool);
+                return;
             }
+            // Otherwise
+            // Removing lower rarity trasure nft from mainTreasurePool
+            UserBoost[] storage userBoosts = treasureMainPool.userBoosts;
+            UserBoost memory userBoost = userBoosts[uint256(findIndex)];
+            // address user = userBoost.user;
+            uint256 removedTokenAmount = userBoost.amount;
+            uint256 removedTokenId = userBoost.tokenId;
+
+            UserBoost memory removingUserBoost = _removeTreasureFromPool(
+                treasureMainPool,
+                uint256(findIndex)
+            );
+
+            magicDepositor.unStakeTreasure(removedTokenId, removedTokenAmount);
+
+            // Adding removed nft , to reserveLegionPool
+            _addTreasure(treasureReservePool, removingUserBoost);
+
+            // Adding upcomming Higher rarity NFT to mainTreasurePool
+            _addToTreasurePool(_tokenId, nftBoost, _amount, WhichPool.TreasureMainPool);
         }
     }
 
