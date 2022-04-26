@@ -82,10 +82,11 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
         address _prMagic,
         address _atlasMine,
         address _treasure,
-        address _legion
+        address _legion,
+        address _lendAuction
     ) external initializer {
         __Ownable_init_unchained();
-        __MagicStaking_init_unchained(_atlasMine, _treasure, _legion);
+        __MagicStaking_init_unchained(_atlasMine, _treasure, _legion, _lendAuction);
 
         magic = IERC20Upgradeable(_magic);
         prMagic = IPrMagicToken(_prMagic);

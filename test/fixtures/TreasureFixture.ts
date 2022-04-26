@@ -1,6 +1,6 @@
 import { deployments, upgrades } from "hardhat";
 import {
-  AtlasMine,
+  MockAtlasMine,
   MasterOfCoin,
   Magic,
   PrMagicToken,
@@ -8,6 +8,7 @@ import {
   Legion,
   Treasure,
   RewardPool,
+  LendingAuctionNft
 } from "../../typechain";
 import {
   TEN_MILLION_MAGIC_BN,
@@ -35,17 +36,17 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
   const Legion = await ethers.getContractFactory("Legion");
   const legion = <Legion>await Legion.deploy();
 
-  const AtlasMine = await ethers.getContractFactory("AtlasMine");
-  const atlasMine = <AtlasMine>await AtlasMine.deploy();
+  const MockAtlasMine = await ethers.getContractFactory("MockAtlasMine");
+  const mockAtlasMine = <MockAtlasMine>await MockAtlasMine.deploy();
 
   const MasterOfCoin = await ethers.getContractFactory("MasterOfCoin");
   const masterOfCoin = <MasterOfCoin>await MasterOfCoin.deploy();
 
-  await atlasMine.init(magicToken.address, masterOfCoin.address);
+  await mockAtlasMine.init(magicToken.address, masterOfCoin.address);
   await masterOfCoin.init(magicToken.address);
 
   // override the utilization
-  await atlasMine.setUtilizationOverride(parseEther("1").div(2)); // 50%
+  await mockAtlasMine.setUtilizationOverride(parseEther("1").div(2)); // 50%
 
   // fund magic
   await magicToken.connect(alice).mint(TEN_MILLION_MAGIC_BN);
@@ -64,15 +65,15 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     await treasure.mint(alice.address, TREASURE_TOKEN_IDS[i], ONE_TREAUSRE);
   }
 
-  // set nft address to atlasMine
-  await atlasMine.setLegion(legion.address);
-  await atlasMine.setTreasure(treasure.address);
+  // set nft address to mockAtlasMine
+  await mockAtlasMine.setLegion(legion.address);
+  await mockAtlasMine.setTreasure(treasure.address);
 
   // add stream
   let { timestamp } = await ethers.provider.getBlock("latest");
 
   await masterOfCoin.addStream(
-    atlasMine.address,
+    mockAtlasMine.address,
     TEN_MILLION_MAGIC_BN,
     ++timestamp,
     timestamp + ONE_YEAR_IN_SECONDS * 2,
@@ -83,17 +84,30 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
   const PrMagicToken = await ethers.getContractFactory("prMagicToken");
   const prMagicToken = <PrMagicToken>await PrMagicToken.deploy();
 
+  const LendingAuctionNft = await ethers.getContractFactory("LendingAuctionNft");
+  const lendingAuctionNft = <LendingAuctionNft>(
+    await upgrades.deployProxy(LendingAuctionNft, [
+      treasure.address,
+      legion.address,
+      mockAtlasMine.address,
+    ])
+  );
+  await lendingAuctionNft.deployed();
+
   const MagicDepositor = await ethers.getContractFactory("MagicDepositor");
   const magicDepositor = <MagicDepositor>(
     await upgrades.deployProxy(MagicDepositor, [
       magicToken.address,
       prMagicToken.address,
-      atlasMine.address,
+      mockAtlasMine.address,
       treasure.address,
       legion.address,
+      alice.address
     ])
   );
   await magicDepositor.deployed();
+
+  await (await lendingAuctionNft.setMagicDepositor(magicDepositor.address)).wait()
 
   const RewardPool = await ethers.getContractFactory("RewardPool");
   const rewardPool = <RewardPool>(
@@ -112,6 +126,7 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
   await magicToken.approve(magicDepositor.address, ethers.constants.MaxUint256);
   await magicToken.approve(rewardPool.address, ethers.constants.MaxUint256);
   await prMagicToken.approve(rewardPool.address, ethers.constants.MaxUint256);
+  const atlasMine = mockAtlasMine;
   return {
     alice,
     bob,
@@ -128,5 +143,6 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     rewardPool,
     treasure,
     legion,
+    lendingAuctionNft
   };
 });

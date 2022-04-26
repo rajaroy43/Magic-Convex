@@ -382,6 +382,8 @@ describe("MagicDepositor", () => {
       const baseFixture = await BaseFixture();
       const { alice, bob, carol, magicToken, magicDepositor } = baseFixture;
 
+      await magicDepositor.setLendAuction(alice.address);
+
       for (let i = 0; i < 3; i++) {
         await Promise.all([
           depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),

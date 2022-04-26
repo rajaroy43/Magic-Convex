@@ -33,11 +33,67 @@ function getAllUserDepositIds(address _user) external view returns (uint256[])
 | ---- | --------- | ----------- |
 | \_0  | uint256[] | undefined   |
 
+### getNftBoost
+
+```solidity
+function getNftBoost(address _nft, uint256 _tokenId, uint256 _amount) external view returns (uint256)
+```
+
+#### Parameters
+
+| Name      | Type    | Description |
+| --------- | ------- | ----------- |
+| \_nft     | address | undefined   |
+| \_tokenId | uint256 | undefined   |
+| \_amount  | uint256 | undefined   |
+
+#### Returns
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
+
 ### harvestAll
 
 ```solidity
 function harvestAll() external nonpayable
 ```
+
+### isLegion1_1
+
+```solidity
+function isLegion1_1(uint256 _tokenId) external view returns (bool)
+```
+
+#### Parameters
+
+| Name      | Type    | Description |
+| --------- | ------- | ----------- |
+| \_tokenId | uint256 | undefined   |
+
+#### Returns
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| \_0  | bool | undefined   |
+
+### isLegion1_1Staked
+
+```solidity
+function isLegion1_1Staked(address user) external view returns (bool)
+```
+
+#### Parameters
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| user | address | undefined   |
+
+#### Returns
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| \_0  | bool | undefined   |
 
 ### stakeLegion
 

@@ -175,23 +175,36 @@ function harvestForNextDeposit() external view returns (uint256)
 ### initialize
 
 ```solidity
-function initialize(address _magic, address _prMagic, address _atlasMine, address _treasure, address _legion) external nonpayable
+function initialize(address _magic, address _prMagic, address _atlasMine, address _treasure, address _legion, address _lendAuction) external nonpayable
 ```
 
 #### Parameters
 
-| Name        | Type    | Description |
-| ----------- | ------- | ----------- |
-| \_magic     | address | undefined   |
-| \_prMagic   | address | undefined   |
-| \_atlasMine | address | undefined   |
-| \_treasure  | address | undefined   |
-| \_legion    | address | undefined   |
+| Name          | Type    | Description |
+| ------------- | ------- | ----------- |
+| \_magic       | address | undefined   |
+| \_prMagic     | address | undefined   |
+| \_atlasMine   | address | undefined   |
+| \_treasure    | address | undefined   |
+| \_legion      | address | undefined   |
+| \_lendAuction | address | undefined   |
 
 ### legion
 
 ```solidity
 function legion() external view returns (address)
+```
+
+#### Returns
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | address | undefined   |
+
+### lendAuction
+
+```solidity
+function lendAuction() external view returns (address)
 ```
 
 #### Returns
@@ -336,6 +349,20 @@ setting legion contract
 | Name     | Type    | Description             |
 | -------- | ------- | ----------------------- |
 | \_legion | address | legion contract address |
+
+### setLendAuction
+
+```solidity
+function setLendAuction(address _lendAuction) external nonpayable
+```
+
+setting LendingAuction contract
+
+#### Parameters
+
+| Name          | Type    | Description                     |
+| ------------- | ------- | ------------------------------- |
+| \_lendAuction | address | LendingAuction contract address |
 
 ### setStakeOnClaim
 
@@ -578,6 +605,20 @@ Event for setting legion contract
 | Name   | Type    | Description |
 | ------ | ------- | ----------- |
 | legion | address | undefined   |
+
+### LendAuctionChanged
+
+```solidity
+event LendAuctionChanged(address lendAuction)
+```
+
+Event for setting lendAuction contract
+
+#### Parameters
+
+| Name        | Type    | Description |
+| ----------- | ------- | ----------- |
+| lendAuction | address | undefined   |
 
 ### NftWithdrawn
 
