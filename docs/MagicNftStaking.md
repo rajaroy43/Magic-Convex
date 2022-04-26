@@ -30,6 +30,18 @@ function legion() external view returns (address)
 | ---- | ------- | ----------- |
 | \_0  | address | undefined   |
 
+### lendAuction
+
+```solidity
+function lendAuction() external view returns (address)
+```
+
+#### Returns
+
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | address | undefined   |
+
 ### onERC1155Received
 
 ```solidity
@@ -122,6 +134,20 @@ setting legion contract
 | Name     | Type    | Description             |
 | -------- | ------- | ----------------------- |
 | \_legion | address | legion contract address |
+
+### setLendAuction
+
+```solidity
+function setLendAuction(address _lendAuction) external nonpayable
+```
+
+setting LendingAuction contract
+
+#### Parameters
+
+| Name          | Type    | Description                     |
+| ------------- | ------- | ------------------------------- |
+| \_lendAuction | address | LendingAuction contract address |
 
 ### setTreasure
 
@@ -283,6 +309,20 @@ Event for setting legion contract
 | Name   | Type    | Description                |
 | ------ | ------- | -------------------------- |
 | legion | address | Address of legion contract |
+
+### LendAuctionChanged
+
+```solidity
+event LendAuctionChanged(address lendAuction)
+```
+
+Event for setting lendAuction contract
+
+#### Parameters
+
+| Name        | Type    | Description                     |
+| ----------- | ------- | ------------------------------- |
+| lendAuction | address | Address of lendAuction contract |
 
 ### NftWithdrawn
 
