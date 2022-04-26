@@ -55,10 +55,10 @@ describe("Local - MagicDepositor", () => {
     it("rejects zero inputs", async () => {
       const { alice, magicDepositor } = await TreasureFixture();
 
-      await expect(magicDepositor.depositFor(0, alice.address)).to.be.revertedWith(
+      await expect(magicDepositor.depositFor(0, alice.address, false)).to.be.revertedWith(
         "amount cannot be 0"
       );
-      await expect(magicDepositor.depositFor(1, AddressZero)).to.be.revertedWith(
+      await expect(magicDepositor.depositFor(1, AddressZero, false)).to.be.revertedWith(
         "cannot deposit for 0x0"
       );
     });
@@ -72,9 +72,15 @@ describe("Local - MagicDepositor", () => {
         // First ever user deposit
         {
           const currentAtlasDepositIndex = await magicDepositor.currentAtlasDepositIndex();
-          await expect(magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address))
+          await expect(magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address, false))
             .to.emit(magicDepositor, "DepositFor")
-            .withArgs(alice.address, alice.address, currentAtlasDepositIndex.add(1), ONE_MAGIC_BN);
+            .withArgs(
+              alice.address,
+              alice.address,
+              currentAtlasDepositIndex.add(1),
+              ONE_MAGIC_BN,
+              false
+            );
 
           expect((await magicDepositor.atlasDeposits(0)).activationTimestamp).to.be.equal(0); // Deposits should start at index 1
 
@@ -97,9 +103,17 @@ describe("Local - MagicDepositor", () => {
             .approve(magicDepositor.address, ethers.constants.MaxUint256);
           const currentAtlasDepositIndex = await magicDepositor.currentAtlasDepositIndex();
 
-          await expect(magicDepositor.connect(bob).depositFor(ONE_MAGIC_BN.mul(2), bob.address))
+          await expect(
+            magicDepositor.connect(bob).depositFor(ONE_MAGIC_BN.mul(2), bob.address, false)
+          )
             .to.emit(magicDepositor, "DepositFor")
-            .withArgs(bob.address, bob.address, currentAtlasDepositIndex, ONE_MAGIC_BN.mul(2));
+            .withArgs(
+              bob.address,
+              bob.address,
+              currentAtlasDepositIndex,
+              ONE_MAGIC_BN.mul(2),
+              false
+            );
 
           expect((await magicDepositor.atlasDeposits(2)).activationTimestamp).to.be.equal(0);
 
@@ -116,7 +130,7 @@ describe("Local - MagicDepositor", () => {
 
         // First deposit increment
         {
-          await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address);
+          await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address, false);
 
           const atlasDeposit = await magicDepositor.atlasDeposits(1);
           const { activationTimestamp, accumulatedMagic, isActive } = atlasDeposit;
@@ -138,7 +152,7 @@ describe("Local - MagicDepositor", () => {
         const treasureFixture = await TreasureFixture();
         const { alice, bob, carol, magicToken, magicDepositor } = treasureFixture;
 
-        await magicDepositor.connect(alice).deposit(depositAmount);
+        await magicDepositor.connect(alice).deposit(depositAmount, false);
         await depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount);
         await depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount);
 
@@ -156,7 +170,7 @@ describe("Local - MagicDepositor", () => {
         // this deposit is forwarded to the AtlasMine. This happens automatically when
         // a user tries to deposit into the contract, initializing a new accumulation deposit
         // for another week
-        await magicDepositor.connect(alice).deposit(ONE_MAGIC_BN);
+        await magicDepositor.connect(alice).deposit(ONE_MAGIC_BN, false);
         expect(await atlasMine.getAllUserDepositIds(magicDepositor.address)).to.have.length(1);
 
         const [firstAtlasDeposit, secondAtlasDeposit] = await Promise.all([
@@ -180,7 +194,7 @@ describe("Local - MagicDepositor", () => {
 
       it("correctly harvests magic from atlas mine", async () => {
         const { alice, magicToken, magicDepositor, rewardPool } = await fixture();
-        await magicDepositor.connect(alice).deposit(depositAmount); // Deposit 1 is activated, Deposit 2 is init'ed
+        await magicDepositor.connect(alice).deposit(depositAmount, false); // Deposit 1 is activated, Deposit 2 is init'ed
 
         await timeAndMine.increaseTime(ONE_DAY_IN_SECONDS);
 
@@ -190,7 +204,7 @@ describe("Local - MagicDepositor", () => {
           magicToken.balanceOf(alice.address),
         ]);
 
-        await magicDepositor.connect(alice).deposit(depositAmount);
+        await magicDepositor.connect(alice).deposit(depositAmount, false);
 
         const [
           magicBalancePost,

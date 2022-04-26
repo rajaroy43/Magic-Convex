@@ -35,6 +35,12 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @notice // Accumulated magic through harvest that is going to be recompounded on the next atlasDeposit
     uint256 public harvestForNextDeposit;
 
+    /// @notice Event for set stakeOnClaim flag
+    /// @param user Address of user
+    /// @param atlasDepositIndex Index of the deposit
+    /// @param stake If true, the claimed prMagic is auto staked
+    event SetStakeOnClaim(address indexed user, uint256 indexed atlasDepositIndex, bool stake);
+
     /// @notice Event for claiming prMagic for activated deposits
     /// @param user Address of user claiming prMagic
     /// @param atlasDepositIndex Activated deposit index
@@ -44,12 +50,15 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @notice Event for depositing Magic tokens
     /// @param from Address of user that deposits Magic tokens
     /// @param to Address of user that receives prMagic tokens
+    /// @param atlasDepositIndex Index of the deposit
     /// @param amount Amount of deposit
+    /// @param stake If true, the claimed prMagic is auto staked
     event DepositFor(
         address indexed from,
         address indexed to,
         uint256 indexed atlasDepositIndex,
-        uint256 amount
+        uint256 amount,
+        bool stake
     );
 
     /// @notice Event for activating a deposit
@@ -85,15 +94,19 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /** USER EXPOSED FUNCTIONS */
     /// @notice Deposit Magic tokens
     /// @param amount The amount of Magic
-    function deposit(uint256 amount) external override {
-        _depositFor(amount, msg.sender);
+    function deposit(uint256 amount, bool stakeOnClaim) external override {
+        _depositFor(amount, msg.sender, stakeOnClaim);
     }
 
     /// @notice Deposit Magic tokens
     /// @param amount The amount of Magic
     /// @param to The address to receive prMagic
-    function depositFor(uint256 amount, address to) external override {
-        _depositFor(amount, to);
+    function depositFor(
+        uint256 amount,
+        address to,
+        bool stakeOnClaim
+    ) external override {
+        _depositFor(amount, to, stakeOnClaim);
     }
 
     /// @notice Claim prMagic token
@@ -121,6 +134,48 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
         }
         emit ClaimMintedShares(msg.sender, atlasDepositIndex, claim);
         return claim;
+    }
+
+    /// @notice Set stakeOnClaim of the give deposit index
+    /// @param atlasDepositIndex The index of deposit
+    /// @param stake If true, the claimed prMagic is auto staked
+    function setStakeOnClaim(uint256 atlasDepositIndex, bool stake) external {
+        AtlasDeposit storage atlasDeposit = atlasDeposits[atlasDepositIndex];
+        require(atlasDeposit.activationTimestamp > 0, "Deposit does not exist");
+        require(
+            atlasDeposit.depositedMagicPerAddress[msg.sender] > 0,
+            "Deposit is already staked or no amount deposited"
+        );
+
+        atlasDeposit.stakeOnClaim[msg.sender] = stake;
+
+        emit SetStakeOnClaim(msg.sender, atlasDepositIndex, stake);
+    }
+
+    /// @notice Batch claim prMagic token on behalf of users
+    /// @param atlasDepositIndex The index of deposit
+    /// @param users Addresses
+    function batchClaimMintedShares(uint256 atlasDepositIndex, address[] calldata users) external {
+        AtlasDeposit storage atlasDeposit = atlasDeposits[atlasDepositIndex];
+        require(atlasDeposit.activationTimestamp > 0, "Deposit does not exist");
+        require(atlasDeposit.isActive, "Deposit has not been activated yet");
+
+        for (uint256 i = 0; i < users.length; i++) {
+            address user = users[i];
+            uint256 claim = atlasDeposit.depositedMagicPerAddress[user];
+
+            if (claim > 0) {
+                atlasDeposit.depositedMagicPerAddress[user] = 0;
+
+                if (atlasDeposit.stakeOnClaim[user]) {
+                    prMagic.safeIncreaseAllowance(staking, claim);
+                    IRewards(staking).stakeFor(user, claim);
+                } else {
+                    prMagic.safeTransfer(user, claim);
+                }
+                emit ClaimMintedShares(user, atlasDepositIndex, claim);
+            }
+        }
     }
 
     /// @notice Withdraw unlocked deposit, Harvest rewards for all deposits, Disperse rewards
@@ -153,15 +208,19 @@ contract MagicDepositor is Initializable, IMagicDepositor, MagicDepositorConfig,
     /// @notice Deposit Magic tokens
     /// @param amount The amount of Magic
     /// @param to The address to receive prMagic
-    function _depositFor(uint256 amount, address to) internal {
+    function _depositFor(
+        uint256 amount,
+        address to,
+        bool stakeOnClaim
+    ) internal {
         require(amount > 0, "amount cannot be 0");
         require(to != address(0), "cannot deposit for 0x0");
         require(atlasMine.unlockAll() == false, "locked");
 
-        _checkCurrentDeposit().increaseMagic(amount, to);
+        _checkCurrentDeposit().increaseMagic(amount, to, stakeOnClaim);
         magic.safeTransferFrom(msg.sender, address(this), amount);
 
-        emit DepositFor(msg.sender, to, currentAtlasDepositIndex, amount);
+        emit DepositFor(msg.sender, to, currentAtlasDepositIndex, amount, stakeOnClaim);
     }
 
     /// @dev Withdraw unlocked deposit, Harvest rewards for all deposits, Disperse rewards

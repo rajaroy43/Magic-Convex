@@ -20,5 +20,5 @@ export async function depositMagicInGuild(
   if (typeof amount === "number") amount = parseEther(`${amount}`);
 
   if (!alreadyApproved) await token.connect(wallet).approve(guild.address, amount);
-  return await guild.connect(wallet).deposit(amount, { gasLimit: ARBITRUM_BLOCK_GAS_LIMIT });
+  return await guild.connect(wallet).deposit(amount, false, { gasLimit: ARBITRUM_BLOCK_GAS_LIMIT });
 }

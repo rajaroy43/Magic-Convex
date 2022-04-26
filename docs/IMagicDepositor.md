@@ -24,7 +24,7 @@ function claimMintedShares(uint256 atlasDepositIndex, bool stake) external nonpa
 ### deposit
 
 ```solidity
-function deposit(uint256) external nonpayable
+function deposit(uint256, bool) external nonpayable
 ```
 
 #### Parameters
@@ -32,11 +32,12 @@ function deposit(uint256) external nonpayable
 | Name | Type    | Description |
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
+| \_1  | bool    | undefined   |
 
 ### depositFor
 
 ```solidity
-function depositFor(uint256 amount, address to) external nonpayable
+function depositFor(uint256 amount, address to, bool) external nonpayable
 ```
 
 #### Parameters
@@ -45,6 +46,7 @@ function depositFor(uint256 amount, address to) external nonpayable
 | ------ | ------- | ----------- |
 | amount | uint256 | undefined   |
 | to     | address | undefined   |
+| \_2    | bool    | undefined   |
 
 ### getUserDepositedMagic
 

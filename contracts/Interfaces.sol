@@ -16,9 +16,13 @@ interface IRewards {
 }
 
 interface IMagicDepositor {
-    function deposit(uint256) external;
+    function deposit(uint256, bool) external;
 
-    function depositFor(uint256 amount, address to) external;
+    function depositFor(
+        uint256 amount,
+        address to,
+        bool
+    ) external;
 
     function claimMintedShares(uint256 atlasDepositIndex, bool stake) external returns (uint256);
 

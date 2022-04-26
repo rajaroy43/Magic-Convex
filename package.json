@@ -10,7 +10,7 @@
     "test": "yarn compile && hardhat test --no-compile",
     "coverage": "hardhat coverage",
     "dev": "nodemon",
-    "prettier": "prettier --write \"./**/*.{ts,sol}\"",
+    "prettier": "prettier --write \"./**/*.{ts,sol,md}\"",
     "prepare": "husky install",
     "deploy:live": "hardhat deploy --tags live --network arbitrum_mainnet"
   },
