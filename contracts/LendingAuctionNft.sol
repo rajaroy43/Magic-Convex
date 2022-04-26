@@ -16,6 +16,9 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
 
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
+    uint8 public constant totalTreasures = 20;
+    uint8 public constant totalLegions = 3;
+
     address public  treasure; //treasure erc1155 nft in atlasmine
     address public  legion; //legion erc721 nft in atlasmine
     IAtlasMine public atlasmine;//AtlasMine contract
@@ -78,7 +81,11 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
     function setMagicDepositor(address _magicDepositor) external onlyOwner {
         require(_magicDepositor != address(0), "magicDepositor zero address");
         require(address(magicDepositor) != _magicDepositor, "same magicDepositor address");
+        // Removing approval for previous magicDepositor address
+        IERC1155Upgradeable(treasure).setApprovalForAll(address(magicDepositor), false);
+        IERC721Upgradeable(legion).setApprovalForAll(address(magicDepositor), false);
         magicDepositor = IMagicNftDepositor(_magicDepositor);
+        // Granting approval for new magicDepositor address
         IERC1155Upgradeable(treasure).setApprovalForAll(_magicDepositor, true);
         IERC721Upgradeable(legion).setApprovalForAll(_magicDepositor, true);
         emit MagicDepositorChanged(address(magicDepositor));
@@ -106,8 +113,6 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
             _withdrawLegionFromPool(legionMainPool,msg.sender,tokenId);
             // Unstake by magicDepositor
             magicDepositor.unStakeLegion(tokenId);
-            // transfer nft token id to user address
-            IERC721Upgradeable(legion).transferFrom(address(this),msg.sender, tokenId);
             uint256 len = legionReservePool.userBoosts.length;
             if(len !=0 ){
                 // Getting maximum boost in legion reserve pool
@@ -124,7 +129,9 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
                 IERC721Upgradeable(legion).transferFrom(address(this), address(magicDepositor), addingTokenId);
                 magicDepositor.stakeLegion(addingTokenId); 
                 _addLegion(legionMainPool,reservePoolUserBoost, WhichPool.LegionMainPool);
-            } 
+            }
+            // transfer nft token id to user address
+            IERC721Upgradeable(legion).transferFrom(address(this),msg.sender, tokenId); 
         } 
         else {
             _withdrawLegionFromPool(legionReservePool,msg.sender,tokenId);
@@ -141,7 +148,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
     function depositTreasures(uint256 tokenId,uint256 amount) external   {
         require(treasure != address(0), "Cannot deposit Treasure");
         require(amount > 0, "Amount is 0");
-        uint256 leftTreasureInMainPool = 20 - treasureInPool(WhichPool.TreasureMainPool);
+        uint256 leftTreasureInMainPool = totalTreasures - treasureInPool(WhichPool.TreasureMainPool);
         if(leftTreasureInMainPool != 0)
         amount = amount >  leftTreasureInMainPool ? leftTreasureInMainPool : amount ;
        _depositTreasures(tokenId,amount);
@@ -175,14 +182,6 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
             _withdrawTreasureFromPool(treasureMainPool,msg.sender,tokenId,amount);
             // Unstake by magicDepositor
             magicDepositor.unStakeTreasure(tokenId,amount);
-            // transfer nft token id to user address
-            IERC1155Upgradeable(treasure).safeTransferFrom(
-                address(this),
-                msg.sender,
-                tokenId,
-                amount,
-                bytes("")
-            );
             uint256 len = treasureReservePool.userBoosts.length;
             if(len !=0 ){
                 // Getting maximum boost in treasure reserve pool
@@ -209,6 +208,14 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
                 _addTreasure(treasureMainPool,reservePoolUserBoost);
 
             } 
+            // transfer nft token id to user address
+            IERC1155Upgradeable(treasure).safeTransferFrom(
+                address(this),
+                msg.sender,
+                tokenId,
+                amount,
+                bytes("")
+            );
         }
         else{
             revert("User don't have enough  treasures");
@@ -226,7 +233,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
             return;
         }
         uint256 legionMainPoolLength = legionPoolTokenIds(WhichPool.LegionMainPool).length;
-        if( legionMainPoolLength < 3 ){
+        if( legionMainPoolLength < totalLegions ){
             _addToLegionPool(_tokenId,nftBoost,WhichPool.LegionMainPool);
         } 
         else{
@@ -255,7 +262,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
     function _depositTreasures(uint256 _tokenId,uint256 _amount) internal{
         uint256 nftBoost = _getBoost(treasure,_tokenId,_amount);    
         uint256 treasureInMainPool = treasureInPool(WhichPool.TreasureMainPool);
-        if(treasureInMainPool < 20 ){
+        if(treasureInMainPool < totalTreasures ){
             _addToTreasurePool(_tokenId,nftBoost,_amount,WhichPool.TreasureMainPool);
         }  
         else{
@@ -419,21 +426,23 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         if(len == 0)
         return (false,-1);
         uint256  minBoost = userBoosts[0].boost;
+        uint256  minDepositedTime = 0;
         for(uint256 i=0; i< len;i++){
             uint256 currentUserBoost = userBoosts[i].boost;
             uint256 currentUserAmount = userBoosts[i].amount;
-            if(_currentAmount <= currentUserAmount  && minBoost > currentUserBoost){
-               minBoost = currentUserBoost;
-               index = int256(i);
-            }
-        }
-        uint256  minDepositedtime = 0;
-        for(uint256 i=0; i< len;i++){
-            if(userBoosts[i].boost == minBoost){
-                uint256  currentMinDepositedtime = userBoosts[i].nftDepositedTime;
-                if(minDepositedtime < currentMinDepositedtime){
-                    minDepositedtime = currentMinDepositedtime;
-                    index = int256(i);
+            uint256  currentMinDepositedtime = userBoosts[i].nftDepositedTime;
+
+            if(_currentAmount <= currentUserAmount){
+
+                if(minBoost == currentUserBoost && minDepositedTime < currentMinDepositedtime){
+			        minDepositedTime = currentMinDepositedtime;
+			        index = int256(i);
+                }   
+
+		        if(minBoost > currentUserBoost){
+			        minBoost = currentUserBoost;
+			        index = int256(i);
+			        minDepositedTime = currentMinDepositedtime;
                 }
             }
         }
@@ -449,22 +458,21 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable{
         uint256 len = userBoosts.length;
        
         uint256  maxBoost = userBoosts[0].boost;
-        for(uint256 i=0; i< len;i++){
-            uint256 currentUserBoost = userBoosts[i].boost;
-            //uint256 currentUserAmount = userBoosts[i].amount;
-            if( maxBoost < currentUserBoost){
-               maxBoost = currentUserBoost;
-               index = i;
-            }
-        }
         uint256  maxDepositedtime = type(uint256).max;
         for(uint256 i=0; i< len;i++){
-            if(userBoosts[i].boost == maxBoost){
-                uint256  currentMaxDepositedtime = userBoosts[i].nftDepositedTime;
-                if(maxDepositedtime > currentMaxDepositedtime){
-                    maxDepositedtime = currentMaxDepositedtime;
-                    index = i;
-                }
+            uint256 currentUserBoost = userBoosts[i].boost;
+            uint256  currentMaxDepositedtime = userBoosts[i].nftDepositedTime;
+            //uint256 currentUserAmount = userBoosts[i].amount;
+
+            if(maxBoost == currentUserBoost && maxDepositedtime > currentMaxDepositedtime){
+			    maxDepositedtime = currentMaxDepositedtime;
+			    index = i;
+            }
+
+		    if(maxBoost < currentUserBoost){
+			    maxBoost = currentUserBoost;
+			    index = i;
+			    maxDepositedtime = currentMaxDepositedtime;
             }
         }
         return index;
