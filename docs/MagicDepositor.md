@@ -40,6 +40,21 @@ function atlasMine() external view returns (contract IAtlasMine)
 | ---- | ------------------- | ----------- |
 | \_0  | contract IAtlasMine | undefined   |
 
+### batchClaimMintedShares
+
+```solidity
+function batchClaimMintedShares(uint256 atlasDepositIndex, address[] users) external nonpayable
+```
+
+Batch claim prMagic token on behalf of users
+
+#### Parameters
+
+| Name              | Type      | Description          |
+| ----------------- | --------- | -------------------- |
+| atlasDepositIndex | uint256   | The index of deposit |
+| users             | address[] | Addresses            |
+
 ### claimMintedShares
 
 ```solidity
@@ -78,31 +93,33 @@ Most recent accumulated atlasDeposit
 ### deposit
 
 ```solidity
-function deposit(uint256 amount) external nonpayable
+function deposit(uint256 amount, bool stakeOnClaim) external nonpayable
 ```
 
 Deposit Magic tokens
 
 #### Parameters
 
-| Name   | Type    | Description         |
-| ------ | ------- | ------------------- |
-| amount | uint256 | The amount of Magic |
+| Name         | Type    | Description         |
+| ------------ | ------- | ------------------- |
+| amount       | uint256 | The amount of Magic |
+| stakeOnClaim | bool    | undefined           |
 
 ### depositFor
 
 ```solidity
-function depositFor(uint256 amount, address to) external nonpayable
+function depositFor(uint256 amount, address to, bool stakeOnClaim) external nonpayable
 ```
 
 Deposit Magic tokens
 
 #### Parameters
 
-| Name   | Type    | Description                    |
-| ------ | ------- | ------------------------------ |
-| amount | uint256 | The amount of Magic            |
-| to     | address | The address to receive prMagic |
+| Name         | Type    | Description                    |
+| ------------ | ------- | ------------------------------ |
+| amount       | uint256 | The amount of Magic            |
+| to           | address | The address to receive prMagic |
+| stakeOnClaim | bool    | undefined                      |
 
 ### getConfig
 
@@ -347,6 +364,21 @@ setting LendingAuction contract
 | ------------- | ------- | ------------------------------- |
 | \_lendAuction | address | LendingAuction contract address |
 
+### setStakeOnClaim
+
+```solidity
+function setStakeOnClaim(uint256 atlasDepositIndex, bool stake) external nonpayable
+```
+
+Set stakeOnClaim of the give deposit index
+
+#### Parameters
+
+| Name              | Type    | Description                                 |
+| ----------------- | ------- | ------------------------------------------- |
+| atlasDepositIndex | uint256 | The index of deposit                        |
+| stake             | bool    | If true, the claimed prMagic is auto staked |
+
 ### setTreasure
 
 ```solidity
@@ -545,7 +577,7 @@ Event for claiming prMagic for activated deposits
 ### DepositFor
 
 ```solidity
-event DepositFor(address indexed from, address indexed to, uint256 indexed atlasDepositIndex, uint256 amount)
+event DepositFor(address indexed from, address indexed to, uint256 indexed atlasDepositIndex, uint256 amount, bool stake)
 ```
 
 Event for depositing Magic tokens
@@ -556,8 +588,9 @@ Event for depositing Magic tokens
 | --------------------------- | ------- | -------------------------------------------- |
 | from `indexed`              | address | Address of user that deposits Magic tokens   |
 | to `indexed`                | address | Address of user that receives prMagic tokens |
-| atlasDepositIndex `indexed` | uint256 | undefined                                    |
+| atlasDepositIndex `indexed` | uint256 | Index of the deposit                         |
 | amount                      | uint256 | Amount of deposit                            |
+| stake                       | bool    | If true, the claimed prMagic is auto staked  |
 
 ### LegionChanged
 
@@ -632,6 +665,22 @@ Event for dispersing rewards to the staking and treasury
 | user `indexed` | address | Address of user that trigger the dispersing |
 | treasuryReward | uint256 | The amount of Magic tokens for the treasury |
 | stakingReward  | uint256 | The amount of Magic tokens for the staking  |
+
+### SetStakeOnClaim
+
+```solidity
+event SetStakeOnClaim(address indexed user, uint256 indexed atlasDepositIndex, bool stake)
+```
+
+Event for set stakeOnClaim flag
+
+#### Parameters
+
+| Name                        | Type    | Description                                 |
+| --------------------------- | ------- | ------------------------------------------- |
+| user `indexed`              | address | Address of user                             |
+| atlasDepositIndex `indexed` | uint256 | Index of the deposit                        |
+| stake                       | bool    | If true, the claimed prMagic is auto staked |
 
 ### TreasureChanged
 

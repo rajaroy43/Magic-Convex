@@ -47,10 +47,10 @@ describe("MagicDepositor", () => {
     it("rejects zero inputs", async () => {
       const { alice, magicDepositor } = await BaseFixture();
 
-      await expect(magicDepositor.depositFor(0, alice.address)).to.be.revertedWith(
+      await expect(magicDepositor.depositFor(0, alice.address, false)).to.be.revertedWith(
         "amount cannot be 0"
       );
-      await expect(magicDepositor.depositFor(1, AddressZero)).to.be.revertedWith(
+      await expect(magicDepositor.depositFor(1, AddressZero, false)).to.be.revertedWith(
         "cannot deposit for 0x0"
       );
     });
@@ -63,7 +63,7 @@ describe("MagicDepositor", () => {
 
         // First ever user deposit
         {
-          await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address);
+          await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address, false);
 
           expect((await magicDepositor.atlasDeposits(0)).activationTimestamp).to.be.equal(0); // Deposits should start at index 1
 
@@ -84,7 +84,7 @@ describe("MagicDepositor", () => {
           await magicToken
             .connect(bob)
             .approve(magicDepositor.address, ethers.constants.MaxUint256);
-          await magicDepositor.connect(bob).depositFor(ONE_MAGIC_BN.mul(2), bob.address);
+          await magicDepositor.connect(bob).depositFor(ONE_MAGIC_BN.mul(2), bob.address, false);
 
           expect((await magicDepositor.atlasDeposits(2)).activationTimestamp).to.be.equal(0);
 
@@ -101,7 +101,7 @@ describe("MagicDepositor", () => {
 
         // First deposit increment
         {
-          await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address);
+          await magicDepositor.connect(alice).depositFor(ONE_MAGIC_BN, alice.address, false);
 
           const atlasDeposit = await magicDepositor.atlasDeposits(1);
           const { activationTimestamp, accumulatedMagic, isActive } = atlasDeposit;
@@ -123,7 +123,7 @@ describe("MagicDepositor", () => {
         const baseFixture = await BaseFixture();
         const { alice, bob, carol, magicToken, magicDepositor } = baseFixture;
 
-        await magicDepositor.connect(alice).deposit(depositAmount);
+        await magicDepositor.connect(alice).deposit(depositAmount, false);
         await depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount);
         await depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount);
 
@@ -141,7 +141,7 @@ describe("MagicDepositor", () => {
         // this deposit is forwarded to the AtlasMine. This happens automatically when
         // a user tries to deposit into the contract, initializing a new accumulation deposit
         // for another week
-        await magicDepositor.connect(alice).deposit(ONE_MAGIC_BN);
+        await magicDepositor.connect(alice).deposit(ONE_MAGIC_BN, false);
         expect(await atlasMine.getAllUserDepositIds(magicDepositor.address)).to.have.length(1);
 
         const [firstAtlasDeposit, secondAtlasDeposit] = await Promise.all([
@@ -165,7 +165,7 @@ describe("MagicDepositor", () => {
 
       it("correctly harvests magic from atlas mine", async () => {
         const { alice, magicToken, magicDepositor, rewardPool } = await fixture();
-        await magicDepositor.connect(alice).deposit(depositAmount); // Deposit 1 is activated, Deposit 2 is init'ed
+        await magicDepositor.connect(alice).deposit(depositAmount, false); // Deposit 1 is activated, Deposit 2 is init'ed
 
         await timeAndMine.increaseTime(ONE_DAY_IN_SECONDS);
 
@@ -175,7 +175,7 @@ describe("MagicDepositor", () => {
           magicToken.balanceOf(alice.address),
         ]);
 
-        await magicDepositor.connect(alice).deposit(depositAmount);
+        await magicDepositor.connect(alice).deposit(depositAmount, false);
 
         const [
           magicBalancePost,
@@ -382,7 +382,7 @@ describe("MagicDepositor", () => {
       const baseFixture = await BaseFixture();
       const { alice, bob, carol, magicToken, magicDepositor } = baseFixture;
 
-      await magicDepositor.setLendAuction(alice.address)
+      await magicDepositor.setLendAuction(alice.address);
 
       for (let i = 0; i < 3; i++) {
         await Promise.all([
@@ -652,6 +652,73 @@ describe("MagicDepositor", () => {
         const stakedbob = await rewardPool.balanceOf(bob.address);
         expect(stakedbob).to.be.equal(depositAmount.mul(3));
       }
+    });
+  });
+
+  describe("claimMintedShares()", () => {
+    const depositAmount = ONE_THOUSAND_MAGIC_BN;
+    const users: string[] = [];
+
+    const fixture = deployments.createFixture(async () => {
+      const baseFixture = await BaseFixture();
+      const { alice, bob, carol, magicToken, magicDepositor } = baseFixture;
+      users.push(alice.address);
+      users.push(bob.address);
+      users.push(carol.address);
+
+      for (let i = 0; i < 3; i++) {
+        await Promise.all([
+          depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
+          depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
+          depositMagicInGuild(carol, magicToken, magicDepositor, depositAmount),
+        ]);
+        await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
+      }
+
+      await depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true);
+      return { ...baseFixture };
+    });
+
+    it("rejects claims to non-existing deposits", async () => {
+      const { mallory, magicDepositor } = await fixture();
+      await expect(
+        magicDepositor.connect(mallory).batchClaimMintedShares(ethers.constants.MaxUint256, users)
+      ).to.be.revertedWith("Deposit does not exist");
+    });
+
+    it("rejects claims to inactive deposits", async () => {
+      const { mallory, magicDepositor } = await fixture();
+      const lastIndex = await magicDepositor.currentAtlasDepositIndex();
+      await expect(
+        magicDepositor.connect(mallory).batchClaimMintedShares(lastIndex, users)
+      ).to.be.revertedWith("Deposit has not been activated");
+    });
+
+    it("setClaimOnMintShares and claim/stake", async () => {
+      const { alice, bob, magicToken, prMagicToken, magicDepositor, rewardPool } =
+        await BaseFixture();
+
+      await Promise.all([
+        depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
+        depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
+      ]);
+
+      await timeAndMine.increaseTime(ONE_WEEK_IN_SECONDS + 1);
+      await Promise.all([
+        depositMagicInGuild(alice, magicToken, magicDepositor, depositAmount, true),
+        depositMagicInGuild(bob, magicToken, magicDepositor, depositAmount),
+      ]);
+
+      await magicDepositor.connect(alice).setStakeOnClaim(1, true);
+      await magicDepositor.connect(bob).setStakeOnClaim(1, true);
+
+      await magicDepositor.batchClaimMintedShares(1, users);
+
+      const stakedAlice = await rewardPool.balanceOf(alice.address);
+      expect(stakedAlice).to.be.equal(depositAmount);
+
+      const stakedbob = await rewardPool.balanceOf(bob.address);
+      expect(stakedbob).to.be.equal(depositAmount);
     });
   });
 });

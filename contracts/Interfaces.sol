@@ -16,9 +16,13 @@ interface IRewards {
 }
 
 interface IMagicDepositor {
-    function deposit(uint256) external;
+    function deposit(uint256, bool) external;
 
-    function depositFor(uint256 amount, address to) external;
+    function depositFor(
+        uint256 amount,
+        address to,
+        bool
+    ) external;
 
     function claimMintedShares(uint256 atlasDepositIndex, bool stake) external returns (uint256);
 
@@ -38,9 +42,12 @@ interface IPrMagicToken is IERC20Upgradeable {
     function burn(address _from, uint256 _amount) external;
 }
 
-interface IMagicNftDepositor{
+interface IMagicNftDepositor {
     function stakeLegion(uint256 tokenId) external;
+
     function unStakeLegion(uint256 tokenId) external;
+
     function stakeTreasure(uint256 tokenId, uint256 amount) external;
+
     function unStakeTreasure(uint256 tokenId, uint256 amount) external;
 }
