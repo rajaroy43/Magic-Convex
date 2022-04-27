@@ -1,7 +1,10 @@
 import { parseEther } from "ethers/lib/utils";
 
+// Arbitrum forking, needed for tests
+
 /**
- * Arbitrum forking, needed for tests
+ * Pre-Defined params for  Precious Mainnet deployment
+ *
  */
 export const ATLAS_MINE_ADDRESS = "0xA0A89db1C899c49F98E6326b764BAFcf167fC2CE";
 export const ATLAS_MINE_IMPLEMENTATION_ADDRESS = "0xc71e6725569af73ac6641ec4bcc99a709ead40c7";
@@ -11,6 +14,18 @@ export const ATLAS_MASTER_OF_COIN_ROLE =
 export const MAGIC_TOKEN_ADDRESS = "0x539bde0d7dbd336b79148aa742883198bbf60342";
 export const LEGION_NFT_ADDRESS = "0xfE8c1ac365bA6780AEc5a985D989b327C27670A1";
 export const TREASURE_NFT_ADDRESS = "0xEBba467eCB6b21239178033189CeAE27CA12EaDf";
+
+/**
+ * Configuration of Magic Depositor
+ */
+export const MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG = {
+  rewards: parseEther("0.5"), // 50% of harvested amounts will go to user rewards, 50% of harvested amounts will go to treasury
+};
+
+/**
+ * Need for test forking
+ */
+
 export const RICH_USER_ADDRESS = "0xfd7a5c211ac4a00182aba2e92e1ccb0daacf8ab0";
 export const SECONDARY_RICH_USER_ADDRESS = "0xb7e50106a5bd3cf21af210a755f9c8740890a8c9";
 export const TREASURE_CONTRACT_OWNER = "0x482729215AAF99B3199E41125865821ed5A4978a";
@@ -41,13 +56,6 @@ export const TEN_MILLION_MAGIC_BN = parseEther("10000000");
 export const PRECISION = parseEther("1");
 
 export const ONE_TREAUSRE = 1;
-export const TREASURE_TOKEN_IDS = [49,51,52,95,97];
+export const TREASURE_TOKEN_IDS = [49, 51, 52, 95, 97];
 export const ONE_LEGION = 1;
-export const LEGION_TOKEN_IDS = [25854,25855, 25856, 25857, 25858];
-
-/**
- * Configuration of Magic Depositor
- */
-export const MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG = {
-  rewards: parseEther("0.5"), // 50% of harvested amounts will go to user rewards, 50% of harvested amounts will go to treasury
-};
+export const LEGION_TOKEN_IDS = [25854, 25855, 25856, 25857, 25858];

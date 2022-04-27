@@ -13,16 +13,16 @@ import {
   TREASURE_TOKEN_IDS,
   LEGION_TOKEN_IDS,
   TREASURE_CONTRACT_OWNER,
-} from "../../utils/constants";
+} from "../utils/constants";
 import {
   IERC1155__factory,
   IERC20__factory,
   IERC721__factory,
   MasterOfCoin__factory,
   Treasure__factory,
-} from "../../typechain";
+} from "../typechain";
 import { ethers, timeAndMine } from "hardhat";
-import { impersonate } from "../../utils/Impersonate";
+import { impersonate } from "../utils/Impersonate";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const token = IERC20__factory.connect(MAGIC_TOKEN_ADDRESS, hre.ethers.provider);
@@ -50,15 +50,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       })
     );
 
-
     await Promise.all(
       TREASURE_TOKEN_IDS.map(async (id) => {
         const amount = 15;
         await impersonate(TREASURE_CONTRACT_OWNER, alice, hre);
         const signer = hre.ethers.provider.getSigner(TREASURE_CONTRACT_OWNER);
-        await treasure.connect(signer).mint(alice.address, id,amount);
-        await treasure.connect(signer).mint(bob.address, id,amount);
-        await treasure.connect(signer).mint(carol.address, id,amount);
+        await treasure.connect(signer).mint(alice.address, id, amount);
+        await treasure.connect(signer).mint(bob.address, id, amount);
+        await treasure.connect(signer).mint(carol.address, id, amount);
       })
     );
   }

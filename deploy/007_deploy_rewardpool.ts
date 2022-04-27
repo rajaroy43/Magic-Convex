@@ -6,8 +6,8 @@ import {
   REWARD_POOL_CONTRACT_NAME,
   PR_MAGIC_TOKEN_CONTRACT_NAME,
   MAGIC_DEPOSITOR_SPLITS_DEFAULT_CONFIG,
-} from "../../utils/constants";
-import { MagicDepositor, MagicDepositor__factory } from "../../typechain";
+} from "../utils/constants";
+import { MagicDepositor, MagicDepositor__factory } from "../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
