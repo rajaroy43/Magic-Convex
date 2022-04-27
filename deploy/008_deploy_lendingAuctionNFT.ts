@@ -5,9 +5,9 @@ import {
   TREASURE_NFT_ADDRESS,
   LEGION_NFT_ADDRESS,
   MAGIC_DEPOSITOR_CONTRACT_NAME,
-  LENDING_AUCTION_NFT_CONTRACT_NAME
-} from "../../utils/constants";
-import { MagicDepositor } from "../../typechain";
+  LENDING_AUCTION_NFT_CONTRACT_NAME,
+} from "../utils/constants";
+import { MagicDepositor } from "../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {
@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ethers: { getContract },
   } = hre;
   const { deployer } = await getNamedAccounts();
-  
+
   const { address: lendingAuctionNftAddress } = await deploy(LENDING_AUCTION_NFT_CONTRACT_NAME, {
     from: deployer,
     proxy: {
@@ -24,11 +24,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       execute: {
         init: {
           methodName: "initialize",
-          args: [
-            TREASURE_NFT_ADDRESS,
-            LEGION_NFT_ADDRESS,
-            ATLAS_MINE_ADDRESS
-          ],
+          args: [TREASURE_NFT_ADDRESS, LEGION_NFT_ADDRESS, ATLAS_MINE_ADDRESS],
         },
       },
     },

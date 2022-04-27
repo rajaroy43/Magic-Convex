@@ -41,7 +41,6 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      deploy: ["./deploy/hardhat"],
       forking: {
         blockNumber: 8103787,
         url: NODE_URL,

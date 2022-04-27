@@ -126,7 +126,29 @@ Run the hardhat contract tests:
     $ yarn test
 ```
 
+### Configuration for Precious Deployment
+
+Already set predefined params that will be needed for precious mainnet deployment .
+But you may change any params under util/constant.ts .
+
+1.  For deployment of MagicDepositorContract :(deploy/hardhat/006_deploy_magic_depositor.ts)
+
+        Set magicToken address,prMagic Token address,atlasMine contract address,
+            treasure contract address,legion contract address
+        Set all above params , In util/constant.ts(We already set these contract address)
+
+2.  For deployment of RewardPool:(deploy/hardhat/007_deploy_rewardpool.ts)
+
+        Set StakingToken as prMagicToken , RewardToken as magicToken and operator as magicDepositorContract address
+
+3.  For deployment of LendingAuctionNft:(deploy/hardhat/008_deploy_lendingAuctionNFT.ts)
+
+        Set treasure,legion and atlasmine contract address and after that call
+        setMagicDepositor(magicDepositorAddress)
+
 ### Precious Deployment on arbitrum mainnet
+
+It will deploy Precious System on ArbitrumMainnet
 
 ```
    $ yarn deploy:live

@@ -1,19 +1,19 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { saveContract } from "../../utils/SaveContract";
+import { saveContract } from "../utils/SaveContract";
 import {
   ATLAS_MASTER_OF_COIN_ADDRESS,
   ATLAS_MINE_ADDRESS,
   ATLAS_MINE_IMPLEMENTATION_ADDRESS,
   LEGION_NFT_ADDRESS,
   TREASURE_NFT_ADDRESS,
-} from "../../utils/constants";
+} from "../utils/constants";
 import {
   AtlasMine__factory,
   IMasterOfCoin__factory,
   IERC1155__factory,
   IERC721__factory,
-} from "../../typechain";
+} from "../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { abi: atlasMineAbi } = AtlasMine__factory;
