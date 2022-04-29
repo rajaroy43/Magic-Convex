@@ -24,15 +24,15 @@ interface IAtlasMine {
             uint8
         );
 
-    function isLegion1_1Staked(address user) external view returns(bool);
+    function isLegion1_1Staked(address user) external view returns (bool);
 
-    function isLegion1_1(uint256 _tokenId) external view  returns (bool);
+    function isLegion1_1(uint256 _tokenId) external view returns (bool);
 
     function getNftBoost(
         address _nft,
         uint256 _tokenId,
         uint256 _amount
-    ) external  view  returns (uint256);
+    ) external view returns (uint256);
 
     function stakeTreasure(uint256 _tokenId, uint256 _amount) external;
 

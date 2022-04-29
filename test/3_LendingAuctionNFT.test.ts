@@ -1,3 +1,4 @@
+import { PreciousChef } from "./../typechain/PreciousChef";
 import { expect } from "chai";
 import { BaseFixture } from "./fixtures/BaseFixture";
 import { ethers } from "ethers";
@@ -55,17 +56,20 @@ describe("Lending Auction NFT ", () => {
       });
 
       it("Should deposit Legion 3 time in mainPool", async () => {
-        const { lendingAuctionNft, alice, legion, atlasMine } = await BaseFixture();
+        const { lendingAuctionNft, alice, legion, atlasMine, preciousChef } = await BaseFixture();
         const legionTokendId_1 = LEGION_TOKEN_IDS[0];
 
         const mainLegionPoolValues = await lendingAuctionNft.legionPoolTokenIds(legionMainPool);
         const beforeDepositUserBoosts = await lendingAuctionNft.getLegionUserBoosts();
         const beforeDepositLegionMainPoolUserBoosts = beforeDepositUserBoosts[0];
         const beforeDepositLegionReservePoolUserBoosts = beforeDepositUserBoosts[1];
+        const beforeDepositChefUserInfo = await preciousChef.userInfo(0, alice.address);
 
         expect(mainLegionPoolValues).to.be.empty;
         expect(beforeDepositLegionMainPoolUserBoosts).to.be.empty;
         expect(beforeDepositLegionReservePoolUserBoosts).to.be.empty;
+        expect(beforeDepositChefUserInfo.boost).to.equal(0);
+        expect(beforeDepositChefUserInfo.rewardDebt).to.equal(0);
 
         const beforeDepositUserBoost = await lendingAuctionNft.getUserLegionData(
           alice.address,
@@ -100,6 +104,11 @@ describe("Lending Auction NFT ", () => {
         expect(afterDepositUserBoost.boost).to.equal(getBoostId1);
         expect(afterDepositinglegionMainPoolTokenIds_1).to.eql([legionTokendId_1]);
 
+        const afterDepositChefUserInfo = await preciousChef.userInfo(0, alice.address);
+        expect(afterDepositChefUserInfo.boost).to.equal(getBoostId1);
+        const afterDepositChefPoolInfo = await preciousChef.poolInfo(0);
+        expect(afterDepositChefPoolInfo.boostSupply).to.equal(getBoostId1);
+
         const legionTokendId_2 = LEGION_TOKEN_IDS[1];
 
         await expect(depositLegion(alice, legion, lendingAuctionNft, legionTokendId_2)).to.emit(
@@ -114,6 +123,12 @@ describe("Lending Auction NFT ", () => {
           legionTokendId_1,
           legionTokendId_2,
         ]);
+
+        const getBoostId2 = await atlasMine.getNftBoost(legion.address, legionTokendId_2, 1);
+        const afterDepositChefUserInfo_2 = await preciousChef.userInfo(0, alice.address);
+        const afterDepositChefPoolInfo_2 = await preciousChef.poolInfo(0);
+        expect(afterDepositChefUserInfo_2.boost).to.equal(getBoostId1.add(getBoostId2));
+        expect(afterDepositChefPoolInfo_2.boostSupply).to.equal(getBoostId1.add(getBoostId2));
 
         const legionTokendId_3 = LEGION_TOKEN_IDS[2];
 
@@ -130,10 +145,20 @@ describe("Lending Auction NFT ", () => {
           legionTokendId_2,
           legionTokendId_3,
         ]);
+
+        const getBoostId3 = await atlasMine.getNftBoost(legion.address, legionTokendId_3, 1);
+        const afterDepositChefUserInfo_3 = await preciousChef.userInfo(0, alice.address);
+        const afterDepositChefPoolInfo_3 = await preciousChef.poolInfo(0);
+        expect(afterDepositChefUserInfo_3.boost).to.equal(
+          getBoostId1.add(getBoostId2).add(getBoostId3)
+        );
+        expect(afterDepositChefPoolInfo_3.boostSupply).to.equal(
+          getBoostId1.add(getBoostId2).add(getBoostId3)
+        );
       });
 
       it("Should deposit Legion multiple time in mainPool/reservePool", async () => {
-        const { lendingAuctionNft, alice, legion, atlasMine } = await BaseFixture();
+        const { lendingAuctionNft, alice, legion, atlasMine, preciousChef } = await BaseFixture();
         const legionTokendId_5 = LEGION_TOKEN_IDS[4];
 
         for (let i = 0; i < 4; i++) {
@@ -175,6 +200,17 @@ describe("Lending Auction NFT ", () => {
         ]);
         expect(beforeDepositingLegionReservePoolTokenIds_4).to.eql([LEGION_TOKEN_IDS[3]]);
 
+        const beforeDepositChefLegionMainPoolUserInfo = await preciousChef.userInfo(
+          0,
+          alice.address
+        );
+        const beforeDepositChefLegionReservePoolUseInfo = await preciousChef.userInfo(
+          1,
+          alice.address
+        );
+        const beforeDepositChefLegionMainPoolInfo = await preciousChef.poolInfo(0);
+        const beforeDepositChefLegionReservePoolInfo = await preciousChef.poolInfo(1);
+
         //LegionTokenIds[2] will replaced by  LegionTokenIds[4]
         //Because LegionTokenIds[4] is more rare than all preserve legion in mainPool
         await expect(depositLegion(alice, legion, lendingAuctionNft, legionTokendId_5)).to.emit(
@@ -191,6 +227,32 @@ describe("Lending Auction NFT ", () => {
         const afterDepositUserBoosts = await lendingAuctionNft.getLegionUserBoosts();
         const afterDepositLegionMainPoolUserBoosts = afterDepositUserBoosts[0];
         const afterDepositLegionReservePoolUserBoosts = afterDepositUserBoosts[1];
+
+        const afterDepositChefLegionMainPoolUserInfo = await preciousChef.userInfo(
+          0,
+          alice.address
+        );
+        const afterDepositChefLegionReservePoolUseInfo = await preciousChef.userInfo(
+          1,
+          alice.address
+        );
+        const afterDepositChefLegionMainPoolInfo = await preciousChef.poolInfo(0);
+        const afterDepositChefLegionReservePoolInfo = await preciousChef.poolInfo(1);
+        const legion2Boost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_IDS[2], 1);
+        const legion4Boost = await atlasMine.getNftBoost(legion.address, LEGION_TOKEN_IDS[4], 1);
+
+        expect(afterDepositChefLegionMainPoolInfo.boostSupply).to.equal(
+          beforeDepositChefLegionMainPoolInfo.boostSupply.add(legion4Boost).sub(legion2Boost)
+        );
+        expect(afterDepositChefLegionMainPoolUserInfo.boost).to.equal(
+          beforeDepositChefLegionMainPoolUserInfo.boost.add(legion4Boost).sub(legion2Boost)
+        );
+        expect(afterDepositChefLegionReservePoolInfo.boostSupply).to.equal(
+          beforeDepositChefLegionReservePoolInfo.boostSupply.add(legion2Boost)
+        );
+        expect(afterDepositChefLegionReservePoolUseInfo.boost).to.equal(
+          beforeDepositChefLegionReservePoolUseInfo.boost.add(legion2Boost)
+        );
 
         // runUpto i=2 ,because 3rd id is interchange wih recently deposited legion
         for (let i = 0; i < afterDepositLegionMainPoolUserBoosts.length - 1; i++) {
@@ -245,7 +307,7 @@ describe("Lending Auction NFT ", () => {
       });
       it("Successfully withdraw legion after deposit", async () => {
         const tokenId = LEGION_TOKEN_IDS[0];
-        const { lendingAuctionNft, alice, legion, atlasMine } = await BaseFixture();
+        const { lendingAuctionNft, alice, legion, atlasMine, preciousChef } = await BaseFixture();
         expect(await legion.ownerOf(tokenId)).to.equal(alice.address);
 
         await expect(depositLegion(alice, legion, lendingAuctionNft, tokenId))
@@ -263,6 +325,11 @@ describe("Lending Auction NFT ", () => {
         expect(beforeWithdrawMainLegionIds).to.eql([tokenId]);
         expect(beforeWithdrawReserveLegionIds).to.empty;
 
+        const beforeWithdrawUserInfo = await preciousChef.userInfo(0, alice.address);
+        expect(beforeWithdrawUserInfo.boost).to.not.equal(0);
+        const beforeWithdrawPoolInfo = await preciousChef.poolInfo(0);
+        expect(beforeWithdrawPoolInfo.boostSupply).to.not.equal(0);
+
         await expect(withdrawLegion(alice, legion, lendingAuctionNft, tokenId))
           .to.emit(lendingAuctionNft, "Withdrawn")
           .withArgs(legion.address, tokenId, 1);
@@ -278,6 +345,11 @@ describe("Lending Auction NFT ", () => {
 
         expect(afterWithdrawMainLegionIds).to.empty;
         expect(afterWithdrawReserveLegionIds).to.empty;
+
+        const afterWithdrawUserInfo = await preciousChef.userInfo(0, alice.address);
+        expect(afterWithdrawUserInfo.boost).to.equal(0);
+        const afterWithdrawPoolInfo = await preciousChef.poolInfo(0);
+        expect(afterWithdrawPoolInfo.boostSupply).to.equal(0);
 
         await expect(withdrawLegion(alice, legion, lendingAuctionNft, tokenId)).to.be.revertedWith(
           "No pool assoicated with token id"
@@ -581,7 +653,7 @@ describe("Lending Auction NFT ", () => {
       });
 
       it("Should deposit Treasure by 30 amounts  in mainPool", async () => {
-        const { lendingAuctionNft, alice, treasure, atlasMine } = await BaseFixture();
+        const { lendingAuctionNft, alice, treasure, atlasMine, preciousChef } = await BaseFixture();
         const treasureTokendId_1 = TREASURE_TOKEN_IDS[0];
         const amount = 10;
 
@@ -606,6 +678,12 @@ describe("Lending Auction NFT ", () => {
         expect(beforeDepositUserBoost.amount).to.equal(0);
         expect(beforeDepositUserBoost.tokenId).to.equal(0);
         expect(beforeDepositUserBoost.user).to.equal(AddressZero);
+
+        const beforeDepositTreasureMainPoolUserInfo = await preciousChef.userInfo(2, alice.address);
+        const beforeDepositTreasureMainPoolInfo = await preciousChef.poolInfo(2);
+
+        expect(beforeDepositTreasureMainPoolUserInfo.boost).to.equal(0);
+        expect(beforeDepositTreasureMainPoolInfo.boostSupply).to.equal(0);
 
         await expect(
           depositTreasures(alice, treasure, lendingAuctionNft, treasureTokendId_1, amount)
@@ -648,6 +726,11 @@ describe("Lending Auction NFT ", () => {
         expect(afterDepositUserBoost.tokenId).to.equal(treasureTokendId_1);
         expect(afterDepositUserBoost.boost).to.equal(getBoostId1);
 
+        const afterDepositTreasureMainPoolUserInfo = await preciousChef.userInfo(2, alice.address);
+        const afterDepositTreasureMainPoolInfo = await preciousChef.poolInfo(2);
+        expect(afterDepositTreasureMainPoolUserInfo.boost).equal(getBoostId1);
+        expect(afterDepositTreasureMainPoolInfo.boostSupply).equal(getBoostId1);
+
         const treasureTokendId_2 = TREASURE_TOKEN_IDS[1];
 
         await expect(
@@ -680,6 +763,14 @@ describe("Lending Auction NFT ", () => {
         expect(afterDepositUserBoost_2.amount).to.equal(amount);
         expect(afterDepositUserBoost_2.tokenId).to.equal(treasureTokendId_2);
         expect(afterDepositUserBoost_2.boost).to.equal(getBoostId_2);
+
+        const afterDepositTreasureMainPoolUserInfo_2 = await preciousChef.userInfo(
+          2,
+          alice.address
+        );
+        const afterDepositTreasureMainPoolInfo_2 = await preciousChef.poolInfo(2);
+        expect(afterDepositTreasureMainPoolUserInfo_2.boost).equal(getBoostId1.add(getBoostId_2));
+        expect(afterDepositTreasureMainPoolInfo_2.boostSupply).equal(getBoostId1.add(getBoostId_2));
 
         //tokenid[0] and tokenid[1] =>mainTreasurePool
         const treasureTokendId_3 = TREASURE_TOKEN_IDS[2];
@@ -732,6 +823,24 @@ describe("Lending Auction NFT ", () => {
         expect(afterDepositUserBoost_3.amount).to.equal(amount);
         expect(afterDepositUserBoost_3.tokenId).to.equal(treasureTokendId_3);
         expect(afterDepositUserBoost_3.boost).to.equal(getBoostId_3);
+
+        const afterDepositTreasureMainPoolUserInfo_3 = await preciousChef.userInfo(
+          2,
+          alice.address
+        );
+        const afterDepositTreasureMainPoolInfo_3 = await preciousChef.poolInfo(2);
+        expect(afterDepositTreasureMainPoolUserInfo_3.boost).equal(getBoostId_2.add(getBoostId_3));
+        expect(afterDepositTreasureMainPoolInfo_3.boostSupply).equal(
+          getBoostId_2.add(getBoostId_3)
+        );
+
+        const afterDepositTreasureReservePoolUserInfo_3 = await preciousChef.userInfo(
+          3,
+          alice.address
+        );
+        const afterDepositTreasureReservePoolInfo_3 = await preciousChef.poolInfo(3);
+        expect(afterDepositTreasureReservePoolUserInfo_3.boost).equal(getBoostId1);
+        expect(afterDepositTreasureReservePoolInfo_3.boostSupply).equal(getBoostId1);
 
         // Final TreasureBalance
         const args = [

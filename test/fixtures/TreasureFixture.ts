@@ -8,7 +8,7 @@ import {
   Legion,
   Treasure,
   RewardPool,
-  LendingAuctionNft
+  LendingAuctionNft,
 } from "../../typechain";
 import {
   TEN_MILLION_MAGIC_BN,
@@ -102,12 +102,12 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
       mockAtlasMine.address,
       treasure.address,
       legion.address,
-      alice.address
+      alice.address,
     ])
   );
   await magicDepositor.deployed();
 
-  await (await lendingAuctionNft.setMagicDepositor(magicDepositor.address)).wait()
+  await (await lendingAuctionNft.setMagicDepositor(magicDepositor.address)).wait();
 
   const RewardPool = await ethers.getContractFactory("RewardPool");
   const rewardPool = <RewardPool>(
@@ -143,6 +143,6 @@ export const TreasureFixture = deployments.createFixture(async ({ ethers, getNam
     rewardPool,
     treasure,
     legion,
-    lendingAuctionNft
+    lendingAuctionNft,
   };
 });

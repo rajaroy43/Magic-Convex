@@ -51,3 +51,17 @@ interface IMagicNftDepositor {
 
     function unStakeTreasure(uint256 tokenId, uint256 amount) external;
 }
+
+interface IPreciousChef {
+    function deposit(
+        uint256 pid,
+        uint256 nftBoost,
+        address to
+    ) external;
+
+    function withdraw(
+        uint256 pid,
+        uint256 nftBoost,
+        address from
+    ) external;
+}
