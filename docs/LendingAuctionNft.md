@@ -104,7 +104,7 @@ getting all userBoosts present in treasureMainPool and treasureReservePool
 ### getUserIndexTreasureBoosts
 
 ```solidity
-function getUserIndexTreasureBoosts(address user, uint256 tokenId, uint256 amount) external view returns (uint256[])
+function getUserIndexTreasureBoosts(address user, uint256 tokenId, uint256 amount) external view returns (uint256[], uint256[])
 ```
 
 getting all treasure userBoosts indexes array
@@ -122,6 +122,7 @@ getting all treasure userBoosts indexes array
 | Name | Type      | Description |
 | ---- | --------- | ----------- |
 | \_0  | uint256[] | undefined   |
+| \_1  | uint256[] | undefined   |
 
 ### getUserLegionData
 

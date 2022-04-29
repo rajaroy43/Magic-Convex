@@ -652,8 +652,10 @@ describe("Lending Auction NFT ", () => {
         ).to.be.revertedWith("ERC1155: caller is not owner nor approved");
       });
 
-      it("Should deposit Treasure by 30 amounts  in mainPool", async () => {
+
+      it("Should deposit Treasure by 30 amounts  in mainPool/reservePool", async () => {
         const { lendingAuctionNft, alice, treasure, atlasMine, preciousChef } = await BaseFixture();
+
         const treasureTokendId_1 = TREASURE_TOKEN_IDS[0];
         const amount = 10;
 
@@ -702,6 +704,9 @@ describe("Lending Auction NFT ", () => {
           treasureTokendId_1,
           amount
         );
+        const userMainTreasureBoostIds = userTreasureBoostIds[0];
+        const userReserveTreasureBoostIds = userTreasureBoostIds[1];
+
         const treasureInMainPool = (
           await lendingAuctionNft.treasureInPool(TreasureMainPool)
         ).toNumber();
@@ -710,10 +715,11 @@ describe("Lending Auction NFT ", () => {
         ).toNumber();
         expect(treasureInMainPool).to.equal(amount);
         expect(treasureInReservePool).to.equal(0);
-        expect(userTreasureBoostIds.length).to.equal(1);
+        expect(userMainTreasureBoostIds.length).to.equal(1);
+        expect(userReserveTreasureBoostIds).to.be.empty;
         const afterDepositUserBoost = await lendingAuctionNft.getUserTreasureData(
           TreasureMainPool,
-          userTreasureBoostIds[0]
+          userMainTreasureBoostIds[0]
         );
         const getBoostId1 = await atlasMine.getNftBoost(
           treasure.address,
@@ -748,10 +754,13 @@ describe("Lending Auction NFT ", () => {
           treasureTokendId_2,
           amount
         );
-        expect(userTreasureBoostIds_2.length).to.equal(1);
+        const userMainTreasureBoostIds_2 = userTreasureBoostIds_2[0];
+        const userReserveTreasureBoostIds_2 = userTreasureBoostIds_2[1];
+        expect(userTreasureBoostIds_2.length).to.equal(2);
+        expect(userReserveTreasureBoostIds_2).to.be.empty;
         const afterDepositUserBoost_2 = await lendingAuctionNft.getUserTreasureData(
           TreasureMainPool,
-          userTreasureBoostIds_2[0]
+          userMainTreasureBoostIds_2[0]
         );
         const getBoostId_2 = await atlasMine.getNftBoost(
           treasure.address,
@@ -805,13 +814,17 @@ describe("Lending Auction NFT ", () => {
           treasureTokendId_3,
           amount
         );
-        expect(userTreasureBoostIds_3.length).to.equal(1);
+
+        const userMainTreasureBoostIds_3 = userTreasureBoostIds_3[0];
+        const userReserveTreasureBoostIds_3 = userTreasureBoostIds_3[1];
+
+        expect(userReserveTreasureBoostIds_3).to.empty;
         // TreasureMainPool at index 1, with treasureId3
-        expect(userTreasureBoostIds_3[0]).to.equal(1);
+        expect(userMainTreasureBoostIds_3[0]).to.equal(1);
 
         const afterDepositUserBoost_3 = await lendingAuctionNft.getUserTreasureData(
           TreasureMainPool,
-          userTreasureBoostIds_3[0]
+          userMainTreasureBoostIds_3[0]
         );
         const getBoostId_3 = await atlasMine.getNftBoost(
           treasure.address,
@@ -889,15 +902,15 @@ describe("Lending Auction NFT ", () => {
         expect(afterFirstDepositMainPoolUserBoost[0].amount).equal(amount);
         expect(afterFirstDepositMainPoolUserBoost[0].tokenId).equal(treasureTokendId_1);
 
-        // Now only 5 treasure will be deposits , remaining 10 will be transfer back to user
+        // Now only 5 treasure will be deposits to mainPool , remaining 10 will be deposit to reservePool
 
         const bobBeforeDeposit = await treasure.balanceOf(bob.address, treasureTokendId_1);
 
         await expect(depositTreasures(bob, treasure, lendingAuctionNft, treasureTokendId_1, amount))
           .to.emit(lendingAuctionNft, "Deposit")
-          .withArgs(treasure.address, treasureTokendId_1, amount - 10);
+          .withArgs(treasure.address, treasureTokendId_1, amount);
         const bobAfterDeposit = await treasure.balanceOf(bob.address, treasureTokendId_1);
-        expect(bobAfterDeposit).to.equal(bobBeforeDeposit.sub(amount - 10));
+        expect(bobAfterDeposit).to.equal(bobBeforeDeposit.sub(amount));
 
         const afterSecondDepositTreasureUserBoost = await lendingAuctionNft.getTreasureUserBoosts();
         const afterSecondDepositMainPoolUserBoost = afterSecondDepositTreasureUserBoost[0];
@@ -908,25 +921,44 @@ describe("Lending Auction NFT ", () => {
           treasureTokendId_1,
           amount - 10
         );
-        expect(getUserBoostIds.length).to.equal(1);
-        const getUserBoostData = await lendingAuctionNft.getUserTreasureData(
+        const userMainTreasureBoostIds_3 = getUserBoostIds[0];
+        const userReserveTreasureBoostIds_3 = getUserBoostIds[1];
+        expect(userMainTreasureBoostIds_3.length).to.equal(1);
+        const getUserBoostDataInMainPool = await lendingAuctionNft.getUserTreasureData(
           TreasureMainPool,
-          getUserBoostIds[0]
+          userMainTreasureBoostIds_3[0]
         );
         const expectedTreasureMainPoolUserBoost: LendingAuctionNft.UserBoostStruct[] = [
           afterFirstDepositMainPoolUserBoost[0],
-          getUserBoostData,
+          getUserBoostDataInMainPool,
+        ];
+
+        const getUserBoostIdsAfterMainDepositing =
+          await lendingAuctionNft.getUserIndexTreasureBoosts(
+            bob.address,
+            treasureTokendId_1,
+            amount - 5
+          );
+        const getUserBoostIdsInReservePool = getUserBoostIdsAfterMainDepositing[1];
+        expect(getUserBoostIdsInReservePool.length).to.equal(1);
+        const getUserBoostDataInReservePool = await lendingAuctionNft.getUserTreasureData(
+          TreasureReservePool,
+          getUserBoostIdsInReservePool[0]
+        );
+        const expectedTreasureReservePoolUserBoost: LendingAuctionNft.UserBoostStruct[] = [
+          getUserBoostDataInReservePool,
         ];
         expect(afterSecondDepositMainPoolUserBoost.length).to.equal(2);
-        expect(afterSecondDepositReservePoolUserBoost).to.be.empty;
+        expect(afterSecondDepositReservePoolUserBoost.length).to.equal(1);
 
         expect(afterSecondDepositMainPoolUserBoost).to.eql(expectedTreasureMainPoolUserBoost);
+        expect(afterSecondDepositReservePoolUserBoost).to.eql(expectedTreasureReservePoolUserBoost);
 
         // Final Boost
 
         const finalBoost = await atlasMine.getUserBoost(magicDepositor.address);
-        const expectedBoost = afterFirstDepositMainPoolUserBoost[0].boost.add(
-          getUserBoostData.boost
+        const expectedBoost = afterSecondDepositMainPoolUserBoost[0].boost.add(
+          afterSecondDepositMainPoolUserBoost[1].boost
         );
 
         expect(finalBoost).to.equal(expectedBoost);
@@ -1018,7 +1050,8 @@ describe("Lending Auction NFT ", () => {
 
         expect(mainTreasureUserBoostAfter).to.be.empty;
         expect(reserveTreasureUserBoostAfter).to.be.empty;
-        expect(userTreasureBoostsIndexes).to.be.empty;
+        expect(userTreasureBoostsIndexes[0]).to.be.empty;
+        expect(userTreasureBoostsIndexes[1]).to.be.empty;
         expect(treasureTokenAfterBalance).to.equal(treasureTokenBeforeBalance.add(amount));
         expect(treasureBoostAfter).to.equal(0);
       });
@@ -1034,12 +1067,14 @@ describe("Lending Auction NFT ", () => {
         expect(beforeWithdrawMainTreasureUserBoosts.length).to.equal(2);
         expect(beforeWithdrawReserveTreasureUserBoosts.length).to.equal(1);
 
-        const expectedReserveTreasureUserBoostIndexes =
-          await lendingAuctionNft.getUserIndexTreasureBoosts(
-            alice.address,
-            treasureTokenId_0,
-            amount
-          );
+        const treasureUserBoostIndexes = await lendingAuctionNft.getUserIndexTreasureBoosts(
+          alice.address,
+          treasureTokenId_0,
+          amount
+        );
+
+        const expectedReserveTreasureUserBoostIndexes = treasureUserBoostIndexes[1];
+
         expect(expectedReserveTreasureUserBoostIndexes.length).to.equal(1);
         expect(expectedReserveTreasureUserBoostIndexes[0]).to.equal(0);
 
@@ -1073,7 +1108,8 @@ describe("Lending Auction NFT ", () => {
 
         expect(afterWithdrawMainTreasureUserBoosts).to.be.eql(beforeWithdrawMainTreasureUserBoosts);
         expect(afterWithdrawReserveTreasureUserBoosts).to.be.empty;
-        expect(afterWithdrawUserIndexTreasureBoosts).to.be.empty;
+        expect(afterWithdrawUserIndexTreasureBoosts[0]).to.be.empty;
+        expect(afterWithdrawUserIndexTreasureBoosts[1]).to.be.empty;
       });
 
       it("Should withdraw from main pool after multiple deposit", async () => {
@@ -1087,22 +1123,22 @@ describe("Lending Auction NFT ", () => {
         const beforeWithdrawMainTreasureUserBoosts = beforeWithdrawTreasureUserBoosts[0];
         const beforeWithdrawReserveTreasureUserBoosts = beforeWithdrawTreasureUserBoosts[1];
 
-        const expectedMainTreasureUserBoostIndexes =
-          await lendingAuctionNft.getUserIndexTreasureBoosts(
-            alice.address,
-            treasureTokenId_1,
-            amount
-          );
+        const expectedTreasureUserBoostIndexes = await lendingAuctionNft.getUserIndexTreasureBoosts(
+          alice.address,
+          treasureTokenId_1,
+          amount
+        );
 
-        expect(expectedMainTreasureUserBoostIndexes.length).to.equal(1);
-        expect(expectedMainTreasureUserBoostIndexes[0]).to.equal(0);
+        const treasureUserBoostIndexes = await lendingAuctionNft.getUserIndexTreasureBoosts(
+          alice.address,
+          treasureTokenId_0,
+          amount
+        );
 
-        const expectedReserveTreasureUserBoostIndexes =
-          await lendingAuctionNft.getUserIndexTreasureBoosts(
-            alice.address,
-            treasureTokenId_0,
-            amount
-          );
+        const expectedMainTreasureUserBoostIndexes = treasureUserBoostIndexes[0];
+        const expectedReserveTreasureUserBoostIndexes = treasureUserBoostIndexes[1];
+
+        expect(expectedMainTreasureUserBoostIndexes).to.empty;
         expect(expectedReserveTreasureUserBoostIndexes.length).to.equal(1);
         expect(expectedReserveTreasureUserBoostIndexes[0]).to.equal(0);
         const expectedReserveTreasureUserBoost = await lendingAuctionNft.getUserTreasureData(
@@ -1147,7 +1183,8 @@ describe("Lending Auction NFT ", () => {
         expect(afterWithdrawMainTreasureUserBoosts).to.eql(afterWithdrawExpectedUserBoost);
 
         expect(afterWithdrawReserveTreasureUserBoosts).to.be.empty;
-        expect(afterWithdrawUserIndexTreasureBoosts).to.be.empty;
+        expect(afterWithdrawUserIndexTreasureBoosts[0]).to.be.empty;
+        expect(afterWithdrawUserIndexTreasureBoosts[1]).to.be.empty;
       });
       it("Should Withdraw all treasures from reserve and main pool", async () => {
         const amount = 10;
@@ -1173,12 +1210,17 @@ describe("Lending Auction NFT ", () => {
             TREASURE_TOKEN_IDS[0],
             amount
           );
+
+        const afterWithdrawMainTreasureUserIndex = afterWithdrawUserIndexTreasureBoosts[0];
+        const afterWithdrawReserveTreasureUserIndex = afterWithdrawUserIndexTreasureBoosts[1];
+
         const afterWithdrawTreasureUserBoosts = await lendingAuctionNft.getTreasureUserBoosts();
         const afterWithdrawMainTreasureUserBoosts = afterWithdrawTreasureUserBoosts[0];
         const afterWithdrawReserveTreasureUserBoosts = afterWithdrawTreasureUserBoosts[1];
         expect(afterWithdrawReserveTreasureUserBoosts).to.be.empty;
         expect(afterWithdrawMainTreasureUserBoosts).to.be.empty;
-        expect(afterWithdrawUserIndexTreasureBoosts).to.be.empty;
+        expect(afterWithdrawMainTreasureUserIndex).to.be.empty;
+        expect(afterWithdrawReserveTreasureUserIndex).to.be.empty;
       });
     });
   });
