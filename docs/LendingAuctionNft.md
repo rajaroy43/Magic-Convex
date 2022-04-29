@@ -281,6 +281,18 @@ _Returns the address of the current owner._
 | ---- | ------- | ----------- |
 | \_0  | address | undefined   |
 
+### preciousChef
+
+```solidity
+function preciousChef() external view returns (contract IPreciousChef)
+```
+
+#### Returns
+
+| Name | Type                   | Description |
+| ---- | ---------------------- | ----------- |
+| \_0  | contract IPreciousChef | undefined   |
+
 ### renounceOwnership
 
 ```solidity
@@ -302,6 +314,20 @@ setting magicDepositor contract
 | Name             | Type    | Description                     |
 | ---------------- | ------- | ------------------------------- |
 | \_magicDepositor | address | magicDepositor contract address |
+
+### setPreciousChef
+
+```solidity
+function setPreciousChef(address _preciousChef) external nonpayable
+```
+
+Set PreciousChef address
+
+#### Parameters
+
+| Name           | Type    | Description                   |
+| -------------- | ------- | ----------------------------- |
+| \_preciousChef | address | PreciousChef contract address |
 
 ### transferOwnership
 
@@ -418,6 +444,18 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 | ----------------------- | ------- | ----------- |
 | previousOwner `indexed` | address | undefined   |
 | newOwner `indexed`      | address | undefined   |
+
+### SetPreciousChef
+
+```solidity
+event SetPreciousChef(address preciousChef)
+```
+
+#### Parameters
+
+| Name         | Type    | Description |
+| ------------ | ------- | ----------- |
+| preciousChef | address | undefined   |
 
 ### Withdrawn
 

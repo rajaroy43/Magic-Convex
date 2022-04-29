@@ -20,7 +20,6 @@ export async function depositLegion(
   return await lendingAuction.connect(wallet).depositLegion(tokenId);
 }
 
-
 /**
  *
  * @param legion => expects to have signer connected
@@ -29,16 +28,14 @@ export async function depositLegion(
  */
 
 export async function withdrawLegion(
-    wallet: SignerWithAddress | Wallet,
-    legion: IERC721 | Legion,
-    lendingAuction: LendingAuctionNft,
-    tokenId: number,
-  ) {
-    return await lendingAuction.connect(wallet).withdrawLegion(tokenId);
-  }
+  wallet: SignerWithAddress | Wallet,
+  legion: IERC721 | Legion,
+  lendingAuction: LendingAuctionNft,
+  tokenId: number
+) {
+  return await lendingAuction.connect(wallet).withdrawLegion(tokenId);
+}
 
-
-  
 /**
  *
  * @param treasure => expects to have signer connected
@@ -47,31 +44,31 @@ export async function withdrawLegion(
  * @param amount
  */
 export async function depositTreasures(
-    wallet: SignerWithAddress | Wallet,
-    treasure: IERC1155 | Treasure,
-    lendingAuction: LendingAuctionNft,
-    tokenId: number,
-    amount: BigNumberish,
-    alreadyApproved = false
-  ) {
-    if (!alreadyApproved) await treasure.connect(wallet).setApprovalForAll(lendingAuction.address, true);
-    return await lendingAuction.connect(wallet).depositTreasures(tokenId, amount);
-  }
-  
-  /**
-   *
-   * @param treasure => expects to have signer connected
-   * @param staking => expects to have signer connected
-   * @param tokenId
-   */
-  
-  export async function withdrawTreasures(
-    wallet: SignerWithAddress | Wallet,
-    treasure: IERC1155 | Treasure,
-    lendingAuction: LendingAuctionNft,
-    tokenId: number,
-    amount: BigNumberish
-  ) {
-    return await lendingAuction.connect(wallet).withdrawTreasure(tokenId, amount);
-  }
-  
+  wallet: SignerWithAddress | Wallet,
+  treasure: IERC1155 | Treasure,
+  lendingAuction: LendingAuctionNft,
+  tokenId: number,
+  amount: BigNumberish,
+  alreadyApproved = false
+) {
+  if (!alreadyApproved)
+    await treasure.connect(wallet).setApprovalForAll(lendingAuction.address, true);
+  return await lendingAuction.connect(wallet).depositTreasures(tokenId, amount);
+}
+
+/**
+ *
+ * @param treasure => expects to have signer connected
+ * @param staking => expects to have signer connected
+ * @param tokenId
+ */
+
+export async function withdrawTreasures(
+  wallet: SignerWithAddress | Wallet,
+  treasure: IERC1155 | Treasure,
+  lendingAuction: LendingAuctionNft,
+  tokenId: number,
+  amount: BigNumberish
+) {
+  return await lendingAuction.connect(wallet).withdrawTreasure(tokenId, amount);
+}

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
-import {IMagicNftDepositor} from "./Interfaces.sol";
+import {IMagicNftDepositor, IPreciousChef} from "./Interfaces.sol";
 import "./MAGIC/IAtlasMine.sol";
 
 /// @title LendingAuctionNft
@@ -22,6 +22,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
     address public legion; //legion erc721 nft in atlasmine
     IAtlasMine public atlasmine; //AtlasMine contract
     IMagicNftDepositor public magicDepositor; //magicDepositor contract
+    IPreciousChef public preciousChef; //PreciousChef contract
 
     struct UserBoost {
         address user;
@@ -32,6 +33,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
     }
 
     struct LegionPool {
+        uint256 pid; // pid of PreciousChef
         //Legion Nft to total Staked
         EnumerableSetUpgradeable.UintSet deposits;
         UserBoost[] userBoosts; //All added boost
@@ -39,6 +41,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
     }
 
     struct TreasurePool {
+        uint256 pid; // pid of PreciousChef
         //totalStaked
         uint256 deposits;
         //  tokenId => total Staked Treasure
@@ -69,6 +72,7 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
     event Deposit(address nft, uint256 tokenId, uint256 amount);
     event Withdrawn(address nft, uint256 tokenId, uint256 amount);
     event MagicDepositorChanged(address magicDepositor);
+    event SetPreciousChef(address preciousChef);
 
     function initialize(
         address _treasure,
@@ -79,6 +83,12 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
         treasure = _treasure;
         legion = _legion;
         atlasmine = IAtlasMine(_atlasMine);
+
+        // init pid
+        legionMainPool.pid = 0;
+        legionReservePool.pid = 1;
+        treasureMainPool.pid = 2;
+        treasureReservePool.pid = 3;
     }
 
     /// @notice setting magicDepositor contract
@@ -95,6 +105,15 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
         IERC1155Upgradeable(treasure).setApprovalForAll(_magicDepositor, true);
         IERC721Upgradeable(legion).setApprovalForAll(_magicDepositor, true);
         emit MagicDepositorChanged(address(magicDepositor));
+    }
+
+    /// @notice Set PreciousChef address
+    /// @param _preciousChef PreciousChef contract address
+    function setPreciousChef(address _preciousChef) external onlyOwner {
+        require(_preciousChef != address(0), "Invalid PreciousChef address");
+
+        preciousChef = IPreciousChef(_preciousChef);
+        emit SetPreciousChef(_preciousChef);
     }
 
     /// @notice depositing legion nft
@@ -401,6 +420,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
         pool.userIndex[tokenId] = pool.userBoosts.length - 1;
         pool.deposits.add(tokenId);
         isPool[user][tokenId] = whichPool;
+
+        preciousChef.deposit(pool.pid, userBoost.boost, user);
     }
 
     function _addTreasure(TreasurePool storage pool, UserBoost memory userBoost) internal {
@@ -412,6 +433,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
         pool.deposits += amount;
         pool.stakedPerToken[user][tokenId] += amount;
         pool.userIndex[user][tokenId][amount].push(userBoostlength);
+
+        preciousChef.deposit(pool.pid, userBoost.boost, user);
     }
 
     function _withdrawLegionFromPool(
@@ -461,6 +484,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
         userBoosts.pop();
         pool.deposits.remove(removedTokenId);
         delete pool.userIndex[removedTokenId];
+
+        preciousChef.withdraw(pool.pid, removedUserBoost.boost, removedUserBoost.user);
     }
 
     function _removeTreasureFromPool(TreasurePool storage pool, uint256 _indexUserBoost)
@@ -485,6 +510,8 @@ contract LendingAuctionNft is Initializable, OwnableUpgradeable {
         pool.stakedPerToken[user][tokenId] -= amount;
         uint256[] storage userIndexes = pool.userIndex[user][tokenId][amount];
         userIndexes.pop();
+
+        preciousChef.withdraw(pool.pid, removedUserBoost.boost, removedUserBoost.user);
     }
 
     // will return true/false and array index

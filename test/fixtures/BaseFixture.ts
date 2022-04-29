@@ -8,6 +8,8 @@ import {
   MagicDepositor__factory,
   PrMagicToken__factory,
   RewardPool__factory,
+  PreciousChef__factory,
+  Precious__factory,
 } from "../../typechain";
 import { LEGION_NFT_ADDRESS, TREASURE_NFT_ADDRESS } from "../../utils/constants";
 
@@ -18,7 +20,9 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     prMagicToken: { address: prMagicTokenAddress },
     MagicDepositor: { address: MagicDepositorAddress },
     RewardPool: { address: rewardPoolAddress },
-    LendingAuctionNft :{address :lendingAuctionNftAddress}
+    LendingAuctionNft: { address: lendingAuctionNftAddress },
+    Precious: { address: preciousAddress },
+    PreciousChef: { address: preciousChefAddress },
   } = await deployments.fixture();
   const [alice, bob, carol, dave, mallory] = await ethers.getSigners();
   const secondaryUsers = [bob, carol, dave];
@@ -31,6 +35,8 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
   const legion = IERC721__factory.connect(LEGION_NFT_ADDRESS, alice);
   const rewardPool = RewardPool__factory.connect(rewardPoolAddress, alice);
   const lendingAuctionNft = LendingAuctionNft__factory.connect(lendingAuctionNftAddress, alice);
+  const precious = Precious__factory.connect(preciousAddress, alice);
+  const preciousChef = PreciousChef__factory.connect(preciousChefAddress, alice);
   const [stakeRewardSplit, treasuryAddress, stakingAddress] = await magicDepositor.getConfig();
 
   const split = await magicToken
@@ -61,6 +67,8 @@ export const BaseFixture = deployments.createFixture(async ({ deployments, ether
     treasure,
     legion,
     rewardPool,
-    lendingAuctionNft
+    lendingAuctionNft,
+    precious,
+    preciousChef,
   };
 });

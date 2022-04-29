@@ -14,8 +14,7 @@ import "./MAGIC/IAtlasMine.sol";
 contract MagicNftStaking is Initializable, OwnableUpgradeable {
     address public treasure; //treasure erc1155 nft in atlasmine
     address public legion; //legion erc721 nft in atlasmine
-    address public lendAuction;//lendingAuction contract
-
+    address public lendAuction; //lendingAuction contract
 
     IAtlasMine public atlasMine; //AtlasMine contract
 
@@ -151,7 +150,7 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
     /// @param tokenId legion nft token id
 
     function stakeLegion(uint256 tokenId) external onlyLendAuction {
-        atlasMine.stakeLegion(tokenId); 
+        atlasMine.stakeLegion(tokenId);
     }
 
     /// @notice unstaking legion nft from atlasmine
@@ -159,7 +158,7 @@ contract MagicNftStaking is Initializable, OwnableUpgradeable {
 
     function unStakeLegion(uint256 tokenId) external onlyLendAuction {
         atlasMine.unstakeLegion(tokenId);
-        IERC721(legion).transferFrom(address(this),lendAuction, tokenId);
+        IERC721(legion).transferFrom(address(this), lendAuction, tokenId);
     }
 
     /// @notice withdrawing any erc1155 nfts

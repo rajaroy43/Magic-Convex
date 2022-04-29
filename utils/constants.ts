@@ -59,3 +59,12 @@ export const ONE_TREAUSRE = 1;
 export const TREASURE_TOKEN_IDS = [49, 51, 52, 95, 97];
 export const ONE_LEGION = 1;
 export const LEGION_TOKEN_IDS = [25854, 25855, 25856, 25857, 25858];
+
+/**
+ * Configuration of PreciousChef
+ */
+export const PRECIOUS_PER_BLOCK = parseEther("1");
+export const LEGION_MAIN_POOL_ALLOCATION = 50;
+export const LEGION_RESERVE_POOL_ALLOCATION = 15;
+export const TREASURE_MAIN_POOL_ALLOCATION = 25;
+export const TREASURE_RESERVE_POOL_ALLOCATION = 10;

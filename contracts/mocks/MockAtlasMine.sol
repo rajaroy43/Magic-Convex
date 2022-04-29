@@ -14,7 +14,11 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpg
 import "../MAGIC/IMasterOfCoin.sol";
 import "../MAGIC/ILegionMetadataStore.sol";
 
-contract MockAtlasMine is Initializable, AccessControlEnumerableUpgradeable, ERC1155HolderUpgradeable {
+contract MockAtlasMine is
+    Initializable,
+    AccessControlEnumerableUpgradeable,
+    ERC1155HolderUpgradeable
+{
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
